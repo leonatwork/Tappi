@@ -15,6 +15,14 @@ aktualisiert.*
 
 ---
 
+## Screenshot
+
+<div align="center">
+  <img src="docs/screenshots/switcher.png" alt="Tappi window switcher" width="820" />
+  <br />
+  <em>Der Switcher zeigt alle offenen Fenster in zuletzt-benutzt-Reihenfolge</em>
+</div>
+
 ## Warum
 
 macOS' <kbd>⌘</kbd><kbd>Tab</kbd> wechselt **Apps**, nicht **Fenster**. Wer drei

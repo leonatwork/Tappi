@@ -15,6 +15,14 @@ system switcher.
 
 ---
 
+## Screenshot
+
+<div align="center">
+  <img src="docs/screenshots/switcher.png" alt="Tappi window switcher" width="820" />
+  <br />
+  <em>The switcher, showing every open window in most-recently-used order</em>
+</div>
+
 ## Why
 
 macOS' <kbd>⌘</kbd><kbd>Tab</kbd> switches **apps**, not **windows**. With three browser
