@@ -28,25 +28,59 @@ final class ThumbnailProvider {
     /// Cached because `CGPreflightScreenCaptureAccess()` is a synchronous trip to
     /// the TCC daemon that costs 10+ ms — calling it per window per session was
     /// single-handedly responsible for a 150 ms stall in front of the panel.
-    private var screenRecordingGranted = false
+    private(set) var isGranted = false
+
+    /// Whether access was already in place when this process started.
+    ///
+    /// ScreenCaptureKit only picks up a fresh grant after a restart, so a grant
+    /// that arrived mid-session means "previews work after restarting", not
+    /// "previews work now" — and the UI has to say which.
+    private var grantedAtLaunch: Bool?
 
     var isAvailable: Bool {
-        SettingsStore.shared.value.thumbnails && screenRecordingGranted
+        SettingsStore.shared.value.thumbnails && isGranted
     }
 
-    /// Re-read the permission. Called at launch and whenever the user touches the
-    /// thumbnail setting — never on the hotkey path.
-    func refreshPermission() {
-        screenRecordingGranted = CGPreflightScreenCaptureAccess()
+    /// Access was granted while we were already running, so a restart is pending.
+    var needsRestart: Bool {
+        isGranted && grantedAtLaunch == false
     }
 
-    /// Ask for Screen Recording. Only ever called from the menu, never implicitly,
-    /// so an unprivileged Tappi stays completely silent.
+    /// Re-read the permission. Cheap enough for opening a menu, never called on
+    /// the hotkey path.
     @discardableResult
-    func requestPermission() -> Bool {
-        let granted = CGRequestScreenCaptureAccess()
-        screenRecordingGranted = granted
-        return granted
+    func refreshPermission() -> Bool {
+        isGranted = CGPreflightScreenCaptureAccess()
+        if grantedAtLaunch == nil { grantedAtLaunch = isGranted }
+        return isGranted
+    }
+
+    /// Show the system prompt, if and only if previews are switched on and we do
+    /// not have access yet.
+    ///
+    /// `CGRequestScreenCaptureAccess()` blocks while the dialog is up, so it must
+    /// not run on the main thread. macOS shows that dialog only once per app
+    /// identity; afterwards the call just returns false and the user has to go
+    /// through System Settings, which is why the menu offers that route too.
+    func requestAccessIfNeeded(completion: @escaping (Bool) -> Void) {
+        refreshPermission()
+        guard SettingsStore.shared.value.thumbnails, !isGranted else {
+            completion(isGranted)
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let granted = CGRequestScreenCaptureAccess()
+            DispatchQueue.main.async {
+                self.isGranted = granted
+                completion(granted)
+            }
+        }
+    }
+
+    /// Deep-link into the Screen Recording list.
+    static func openSystemSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
+        NSWorkspace.shared.open(url)
     }
 
     /// Refresh the catalogue of capturable windows. Returns immediately; `then`

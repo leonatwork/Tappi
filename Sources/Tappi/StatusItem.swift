@@ -50,6 +50,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
+        // Opening a menu is a fine moment to re-read a permission that may have
+        // been granted in System Settings since we last looked.
+        ThumbnailProvider.shared.refreshPermission()
         menu.removeAllItems()
         let modifier = settings.holdModifier.symbol
 
@@ -60,7 +63,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         } else if !WindowStore.shared.isOperational {
             status = "Keine Fenster erkannt · Freigabe prüfen"
         } else {
-            status = "Aktiv · \(modifier)Tab · \(WindowStore.shared.entries.count) Fenster"
+            let previews = ThumbnailProvider.shared
+            let suffix = (settings.thumbnails && !previews.isGranted) ? " · ohne Vorschauen" : ""
+            status = "Aktiv · \(modifier)Tab · \(WindowStore.shared.entries.count) Fenster\(suffix)"
         }
         menu.addItem(disabled(status))
 
@@ -114,7 +119,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         if !SystemSwitcher.systemShortcutsEnabled && !SystemSwitcher.isSuppressed {
             menu.addItem(action("System-⌘Tab wiederherstellen", #selector(restoreSystemSwitcher)))
         }
+        let previews = ThumbnailProvider.shared
         menu.addItem(toggle("Vorschaubilder", #selector(toggleThumbnails), settings.thumbnails))
+        if settings.thumbnails && !previews.isGranted {
+            let grant = action("Bildschirmaufnahme freigeben …", #selector(grantScreenRecording))
+            grant.toolTip = "Ohne diese Freigabe zeigt Tappi App-Symbole statt Fenstervorschauen."
+            menu.addItem(indented(grant))
+        } else if previews.needsRestart {
+            menu.addItem(indented(action("Neu starten, um Vorschauen zu aktivieren",
+                                         #selector(restartTappi))))
+        }
         menu.addItem(toggle("Minimierte Fenster", #selector(toggleMinimized), settings.includeMinimized))
         menu.addItem(toggle("Fenster anderer Spaces", #selector(toggleSpaces), settings.includeOtherSpaces))
         menu.addItem(toggle("Fenster ausgeblendeter Apps", #selector(toggleHidden), settings.includeHiddenApps))
@@ -123,6 +137,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(toggle("Bei der Anmeldung starten", #selector(toggleLaunchAtLogin), settings.launchAtLogin))
         menu.addItem(action("Einstellungsdatei öffnen", #selector(openSettingsFile)))
+        menu.addItem(action("Diagnoseprotokoll öffnen", #selector(openDiagnostics)))
+        menu.addItem(action("Tappi neu starten", #selector(restartTappi)))
         menu.addItem(.separator())
         menu.addItem(action("Tappi beenden", #selector(quit)))
     }
@@ -153,6 +169,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         return entry
     }
 
+    /// Visually subordinate an item to the one above it.
+    private func indented(_ item: NSMenuItem) -> NSMenuItem {
+        item.indentationLevel = 1
+        return item
+    }
+
     // MARK: - Actions
 
     @objc private func setModifier(_ sender: NSMenuItem) {
@@ -174,12 +196,37 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func toggleThumbnails() {
         let enabling = !settings.thumbnails
         SettingsStore.shared.mutate { $0.thumbnails = enabling }
-        // Only ask for Screen Recording when the user actually opts in.
-        ThumbnailProvider.shared.refreshPermission()
-        if enabling && !CGPreflightScreenCaptureAccess() {
-            ThumbnailProvider.shared.requestPermission()
+        guard enabling else { return }
+        // Switching previews on is the moment to ask for the permission they need.
+        ThumbnailProvider.shared.requestAccessIfNeeded { granted in
+            if granted {
+                ThumbnailProvider.shared.prepare()
+            } else {
+                ThumbnailProvider.openSystemSettings()
+            }
         }
-        ThumbnailProvider.shared.prepare()
+    }
+
+    @objc private func grantScreenRecording() {
+        ThumbnailProvider.shared.requestAccessIfNeeded { granted in
+            // The system dialog appears only once per app identity; every later
+            // attempt has to go through System Settings.
+            if granted {
+                ThumbnailProvider.shared.prepare()
+            } else {
+                ThumbnailProvider.openSystemSettings()
+            }
+        }
+    }
+
+    /// Screen Recording only takes effect for a freshly started process.
+    @objc private func restartTappi() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        let url = Bundle.main.bundleURL
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
     }
 
     @objc private func toggleReplaceSystemSwitcher() {
@@ -214,6 +261,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             SettingsStore.shared.value.save()
         }
         NSWorkspace.shared.open(Settings.url)
+    }
+
+    @objc private func openDiagnostics() {
+        NSWorkspace.shared.open(Diagnostics.url)
     }
 
     @objc private func openAccessibility() {

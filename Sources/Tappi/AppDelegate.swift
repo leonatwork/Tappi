@@ -9,6 +9,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu bar only: no Dock tile, no main menu, never steals focus.
         NSApp.setActivationPolicy(.accessory)
+
+        // Two copies (a build in dist/ and the installed one) share a bundle id and
+        // would each install an event tap, double-handling every keystroke — and
+        // the first one to quit would hand ⌘Tab back while the other still runs.
+        guard !anotherInstanceIsRunning() else {
+            NSLog("Tappi: another instance is already running — exiting")
+            NSApp.terminate(nil)
+            return
+        }
+
         statusItem = StatusItemController()
         installTerminationHandlers()
 
@@ -65,9 +75,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if SwitcherController.shared.start() {
-            Diagnostics.log("event tap installed; screen recording="
-                            + (ThumbnailProvider.shared.isAvailable ? "granted" : "off"))
+            Diagnostics.log("event tap installed")
             lastReport = ""
+            askForScreenRecording()
         } else {
             // The one failure macOS gives no useful error for: the process is
             // "trusted" but not actually ticked in the Accessibility list.
@@ -75,6 +85,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                    + "remove Tappi from System Settings ▸ Privacy & Security ▸ Accessibility "
                    + "and add it again (a rebuild invalidates the old entry)")
         }
+    }
+
+    /// Previews are on by default, so the permission has to be requested rather
+    /// than waited for — nobody discovers it by toggling a menu item they cannot
+    /// see the effect of.
+    private func askForScreenRecording() {
+        ThumbnailProvider.shared.requestAccessIfNeeded { granted in
+            if granted {
+                Diagnostics.log(ThumbnailProvider.shared.needsRestart
+                    ? "screen recording granted — restart Tappi to enable previews"
+                    : "screen recording granted")
+            } else if SettingsStore.shared.value.thumbnails {
+                Diagnostics.log("screen recording denied — showing app icons instead of previews; "
+                                + "grant it via the menu bar icon ▸ 'Bildschirmaufnahme freigeben'")
+            }
+        }
+    }
+
+    private func anotherInstanceIsRunning() -> Bool {
+        guard let id = Bundle.main.bundleIdentifier else { return false }
+        let mine = ProcessInfo.processInfo.processIdentifier
+        return NSRunningApplication.runningApplications(withBundleIdentifier: id)
+            .contains { $0.processIdentifier != mine }
     }
 
     /// Log a recurring condition only when it changes, so the file stays readable.

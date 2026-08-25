@@ -133,9 +133,15 @@ landet das Bundle nur in `./dist/`.
 
 - **Bedienungshilfen** (zwingend): Beim ersten Start erscheint der Systemdialog. Ohne
   diese Freigabe kann Tappi weder Tastendrücke sehen noch Fenster in den Vordergrund holen.
-- **Bildschirmaufnahme** (optional): Nur für die Vorschaubilder. Tappi fragt **nicht**
-  von sich aus danach — erst wenn man „Vorschaubilder" im Menü einschaltet. Ohne diese
-  Freigabe zeigen die Kacheln App-Icons, alles andere funktioniert unverändert.
+- **Bildschirmaufnahme** (optional): Nur für die Vorschaubilder. Da Vorschauen
+  voreingestellt an sind, fragt Tappi beim Start danach, sobald sie fehlt. Ohne die
+  Freigabe zeigen die Kacheln App-Symbole, alles andere funktioniert unverändert.
+
+  macOS zeigt diesen Systemdialog **nur einmal pro App**. Wurde er einmal abgelehnt,
+  führt der Weg nur noch über die Systemeinstellungen — dafür gibt es im Menü den Punkt
+  *Bildschirmaufnahme freigeben …*. Und weil ScreenCaptureKit eine frisch erteilte
+  Freigabe erst in einem neu gestarteten Prozess sieht, bietet das Menü danach
+  *Neu starten, um Vorschauen zu aktivieren* an.
 
 ### Damit die Freigabe erhalten bleibt
 
@@ -182,9 +188,12 @@ Danach Tappi neu starten und die Freigaben einmal erteilen.
 
 ## Einstellungen
 
-Über das Menüleisten-Symbol: Modifier, Einblendeverzögerung, Kachelgröße,
+Über das Menüleisten-Symbol: Modifier, Einblendeverzögerung, Kachelgröße (112–320 pt),
 Vorschaubilder, minimierte Fenster, Fenster anderer Spaces, Fenster ausgeblendeter Apps,
-Auswahl-per-Maus und Autostart.
+Auswahl-per-Maus und Autostart. Dazu *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
+
+Die Statuszeile ganz oben im Menü sagt, woran es hakt: fehlende Bedienungshilfen, keine
+erkannten Fenster oder „ohne Vorschauen".
 
 Alles liegt als JSON in `~/Library/Application Support/Tappi/settings.json` und lässt sich
 auch direkt bearbeiten.
@@ -227,6 +236,9 @@ und in die Log-Datei schauen.
   nicht übernehmen.
 - Ad-hoc-Signaturen und macOS' Berechtigungsverwaltung vertragen sich schlecht — siehe
   „Damit die Freigabe erhalten bleibt".
+- Es läuft immer nur eine Instanz: Startet eine zweite (etwa aus `dist/` neben der
+  installierten), beendet sie sich sofort wieder. Zwei Instanzen hätten sonst je einen
+  Event Tap installiert und jeden Tastendruck doppelt verarbeitet.
 - Getestet auf macOS 26.6, Apple Silicon. Minimum ist macOS 14.
 
 ## Aufbau
