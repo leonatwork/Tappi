@@ -1,0 +1,24 @@
+name: Funktionswunsch
+description: Ein Vorschlag für Tappi
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+      description: Bitte die Situation beschreiben, nicht nur die gewünschte Lösung.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Wie stellst du dir das vor?
+
+  - type: input
+    id: windows
+    attributes:
+      label: Gibt es das unter Windows?
+      description: >
+        Tappi bildet das Alt-Tab-Verhalten von Windows nach. Ein Verweis darauf, wie
+        Windows es löst, ist das stärkste Argument für einen Vorschlag.

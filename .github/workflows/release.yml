@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: ./build.sh
+
+      - name: Package
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # ditto rather than zip: it preserves the code signature and resource forks.
+          ditto -c -k --keepParent dist/Tappi.app "Tappi-${VERSION}.zip"
+          shasum -a 256 "Tappi-${VERSION}.zip" | tee checksum.txt
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          NOTES=$(cat <<'EOF'
+          ## Installation
+
+          1. `Tappi-__VERSION__.zip` herunterladen und entpacken
+          2. `Tappi.app` nach `/Applications` ziehen
+          3. Beim ersten Start: **Rechtsklick ▸ Öffnen** (nicht Doppelklick)
+
+          Schritt 3 ist nötig, weil dieser Build nicht notarisiert ist. Alternativ:
+
+          ```bash
+          xattr -dr com.apple.quarantine /Applications/Tappi.app
+          ```
+
+          Danach fragt Tappi nach **Bedienungshilfen** (zwingend) und
+          **Bildschirmaufnahme** (optional, nur für die Fenstervorschauen).
+
+          > **Hinweis:** Dieser Build ist ad-hoc signiert. macOS bindet erteilte
+          > Berechtigungen an die Signatur, weshalb sie nach einem Update erneut erteilt
+          > werden müssen. Wer das vermeiden will, baut selbst — `./setup-signing.sh`
+          > erzeugt eine stabile lokale Identität, danach überstehen die Freigaben jedes
+          > Update. Siehe README.
+
+          Vollständige Änderungen: [CHANGELOG.md](https://github.com/leonatwork/Tappi/blob/master/CHANGELOG.md)
+          EOF
+          )
+          NOTES="${NOTES//__VERSION__/$VERSION}"
+          printf '%s\n\n**SHA-256**\n```\n%s\n```\n' "$NOTES" "$(cat checksum.txt)" > notes.md
+          gh release create "$VERSION" "Tappi-${VERSION}.zip" \
+            --title "Tappi $VERSION" --notes-file notes.md

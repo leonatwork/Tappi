@@ -1,0 +1,76 @@
+name: Fehler melden
+description: Etwas funktioniert nicht wie erwartet
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für die Meldung. Die Fragen unten klingen kleinlich, sparen aber meist
+        eine ganze Rückfragerunde — besonders die zum Diagnoseprotokoll.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: Was passiert, und was hattest du erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zum Reproduzieren
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnoseprotokoll
+      description: >
+        Menüleisten-Symbol ▸ „Diagnoseprotokoll öffnen", oder
+        `~/Library/Application Support/Tappi/diagnostics.log`.
+        Es enthält keine Fenstertitel oder sonstigen Inhalte — nur Startzustand und
+        Berechtigungen.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS-Version
+      placeholder: "z. B. 15.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: arch
+    attributes:
+      label: Prozessor
+      options: [Apple Silicon, Intel]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Woher stammt dein Tappi?
+      description: >
+        Relevant, weil ad-hoc signierte Release-Builds erteilte Berechtigungen nach
+        jedem Update verlieren — selbst gebaute mit eigener Signatur nicht.
+      options:
+        - Release-Download
+        - Selbst gebaut (mit setup-signing.sh)
+        - Selbst gebaut (ohne setup-signing.sh)
+    validations:
+      required: true
+
+  - type: input
+    id: keyboard
+    attributes:
+      label: Tastaturlayout
+      description: Bei Problemen mit Tastenkürzeln wichtig — ISO und ANSI vergeben unterschiedliche Keycodes.
+      placeholder: "z. B. Deutsch (ISO)"

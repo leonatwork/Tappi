@@ -1,0 +1,32 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Build
+        run: swift build -c release 2>&1 | tee build.log
+
+      - name: Fail on warnings
+        run: |
+          # The hotkey path is performance-critical and the code is small enough
+          # that warnings should never accumulate.
+          if grep -q "warning:" build.log; then
+            echo "::error::build produced warnings"
+            grep "warning:" build.log
+            exit 1
+          fi
+
+      - name: Assemble app bundle
+        run: ./build.sh

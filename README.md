@@ -1,5 +1,10 @@
 # Tappi
 
+[![Build](https://github.com/leonatwork/Tappi/actions/workflows/build.yml/badge.svg)](https://github.com/leonatwork/Tappi/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/leonatwork/Tappi?sort=semver)](https://github.com/leonatwork/Tappi/releases/latest)
+![Plattform](https://img.shields.io/badge/macOS-14%2B-lightgrey)
+[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+
 Ein Fensterwechsler für macOS, der sich anfühlt wie Alt-Tab unter Windows — und zwar
 **sofort**. Kein Warten, kein Ruckeln, keine CPU-Spitzen beim Drücken.
 
@@ -119,15 +124,40 @@ Im Leerlauf: rund 1 % CPU-Zeit und ~60 MB RSS.
 
 ## Installation
 
-Voraussetzung sind die Xcode Command Line Tools (`xcode-select --install`), ein volles
-Xcode wird nicht gebraucht.
+### Fertige App herunterladen
+
+Neuestes Release: **[Tappi.app herunterladen](https://github.com/leonatwork/Tappi/releases/latest)**
+
+1. ZIP entpacken und `Tappi.app` nach `/Applications` ziehen
+2. Beim ersten Start **Rechtsklick ▸ Öffnen** (nicht Doppelklick)
+
+Schritt 2 ist nötig, weil die Release-Builds nicht notarisiert sind — dafür wäre ein
+kostenpflichtiges Apple-Entwicklerkonto erforderlich. Alternativ:
 
 ```bash
+xattr -dr com.apple.quarantine /Applications/Tappi.app
+```
+
+> Release-Builds sind ad-hoc signiert. macOS bindet erteilte Berechtigungen an die
+> Signatur, weshalb sie **nach jedem Update erneut erteilt werden müssen**. Wen das
+> stört, baut besser selbst — das dauert eine Minute und löst das Problem dauerhaft.
+
+### Selbst bauen (empfohlen)
+
+Es wird kein Xcode benötigt, die Command Line Tools genügen:
+
+```bash
+xcode-select --install
+git clone https://github.com/leonatwork/Tappi.git
+cd Tappi
+./setup-signing.sh
 ./build.sh --install
 ```
 
-Das baut `Tappi.app`, legt sie in `/Applications` ab und startet sie. Ohne `--install`
-landet das Bundle nur in `./dist/`.
+`setup-signing.sh` legt einmalig eine lokale Signaturidentität an, damit die erteilten
+Berechtigungen jeden künftigen Neubau überstehen (Details unter *Damit die Freigabe
+erhalten bleibt*). Ohne `--install` landet das fertige Bundle nur in `./dist/`.
+
 
 ### Berechtigungen
 
@@ -256,6 +286,20 @@ und in die Log-Datei schauen.
 | `StatusItem.swift` | Menüleisten-Menü |
 | `Diagnostics.swift` | Startprotokoll für ein Programm ohne Konsole |
 
+## Mitwirken
+
+Fehlerberichte und Pull Requests sind willkommen — siehe **[CONTRIBUTING.md](CONTRIBUTING.md)**
+für Entwicklungsumgebung, Architektur und die Fallstricke, die schon einmal Zeit gekostet
+haben. Änderungen pro Version stehen im **[CHANGELOG.md](CHANGELOG.md)**.
+
+Bei Fehlerberichten bitte das Diagnoseprotokoll beilegen (Menüleisten-Symbol ▸
+*Diagnoseprotokoll öffnen*). Es enthält keine Fenstertitel oder sonstigen Inhalte.
+
 ## Lizenz
 
-MIT
+[MIT](LICENSE) — freie Nutzung, Änderung und Weitergabe, ohne Gewährleistung.
+
+Tappi ist von Grund auf eigenständig geschrieben und teilt keinen Code mit
+[AltTab](https://github.com/lwouis/alt-tab-macos). Für die Übernahme von ⌘Tab wird
+dieselbe private CoreGraphics-Funktion verwendet, weil macOS dafür keine öffentliche
+Entsprechung anbietet.

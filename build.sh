@@ -17,6 +17,16 @@ cp "$BIN" "$APP/Contents/MacOS/Tappi"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
+# Stamp a version: an explicit VERSION wins, otherwise the newest git tag, else
+# whatever Info.plist already says. Leading "v" is stripped for the display version.
+VERSION="${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null || true)}"
+if [[ -n "${VERSION:-}" ]]; then
+  SHORT="${VERSION#v}"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $SHORT" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $SHORT" "$APP/Contents/Info.plist"
+  echo "==> version $SHORT"
+fi
+
 # TCC (Accessibility, Screen Recording) keys off the code signature, and an ad-hoc
 # signature is identified by the hash of the binary — so every rebuild invalidates
 # the granted permissions. Prefer any real signing identity over ad-hoc; run
