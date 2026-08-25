@@ -33,26 +33,25 @@ jobs:
           NOTES=$(cat <<'EOF'
           ## Installation
 
-          1. `Tappi-__VERSION__.zip` herunterladen und entpacken
-          2. `Tappi.app` nach `/Applications` ziehen
-          3. Beim ersten Start: **Rechtsklick ▸ Öffnen** (nicht Doppelklick)
+          1. Download and unzip `Tappi-__VERSION__.zip`
+          2. Drag `Tappi.app` into `/Applications`
+          3. On first launch: **right-click ▸ Open** (not a double-click)
 
-          Schritt 3 ist nötig, weil dieser Build nicht notarisiert ist. Alternativ:
+          Step 3 is needed because this build is not notarised. Alternatively:
 
           ```bash
           xattr -dr com.apple.quarantine /Applications/Tappi.app
           ```
 
-          Danach fragt Tappi nach **Bedienungshilfen** (zwingend) und
-          **Bildschirmaufnahme** (optional, nur für die Fenstervorschauen).
+          Tappi then asks for **Accessibility** (required) and **Screen Recording**
+          (optional, only for the window previews).
 
-          > **Hinweis:** Dieser Build ist ad-hoc signiert. macOS bindet erteilte
-          > Berechtigungen an die Signatur, weshalb sie nach einem Update erneut erteilt
-          > werden müssen. Wer das vermeiden will, baut selbst — `./setup-signing.sh`
-          > erzeugt eine stabile lokale Identität, danach überstehen die Freigaben jedes
-          > Update. Siehe README.
+          > **Note:** this build is ad-hoc signed. macOS ties granted permissions to the
+          > signature, so they have to be granted again after an update. To avoid that,
+          > build it yourself — `./setup-signing.sh` creates a stable local identity, after
+          > which permissions survive every update. See the README.
 
-          Vollständige Änderungen: [CHANGELOG.md](https://github.com/leonatwork/Tappi/blob/master/CHANGELOG.md)
+          Full changes: [CHANGELOG.md](https://github.com/leonatwork/Tappi/blob/master/CHANGELOG.md)
           EOF
           )
           NOTES="${NOTES//__VERSION__/$VERSION}"

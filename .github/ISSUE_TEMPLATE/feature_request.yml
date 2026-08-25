@@ -1,24 +1,24 @@
-name: Funktionswunsch
-description: Ein Vorschlag für Tappi
+name: Feature request
+description: A suggestion for Tappi
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Welches Problem soll gelöst werden?
-      description: Bitte die Situation beschreiben, nicht nur die gewünschte Lösung.
+      label: What problem should this solve?
+      description: Please describe the situation, not only the solution you have in mind.
     validations:
       required: true
 
   - type: textarea
     id: idea
     attributes:
-      label: Wie stellst du dir das vor?
+      label: How do you imagine it working?
 
   - type: input
     id: windows
     attributes:
-      label: Gibt es das unter Windows?
+      label: Does Windows do this?
       description: >
-        Tappi bildet das Alt-Tab-Verhalten von Windows nach. Ein Verweis darauf, wie
-        Windows es löst, ist das stärkste Argument für einen Vorschlag.
+        Tappi reproduces the Alt-Tab behaviour of Windows. Pointing at how Windows solves
+        something is the strongest argument a suggestion can have.

@@ -1,24 +1,24 @@
-name: Fehler melden
-description: Etwas funktioniert nicht wie erwartet
+name: Bug report
+description: Something does not work as expected
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Danke für die Meldung. Die Fragen unten klingen kleinlich, sparen aber meist
-        eine ganze Rückfragerunde — besonders die zum Diagnoseprotokoll.
+        Thanks for reporting. The questions below look fussy but usually save a whole
+        round of back-and-forth — especially the diagnostics log.
 
   - type: textarea
     id: what
     attributes:
-      label: Was passiert, und was hattest du erwartet?
+      label: What happens, and what did you expect?
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Schritte zum Reproduzieren
+      label: Steps to reproduce
       placeholder: |
         1. …
         2. …
@@ -28,12 +28,11 @@ body:
   - type: textarea
     id: diagnostics
     attributes:
-      label: Diagnoseprotokoll
+      label: Diagnostics log
       description: >
-        Menüleisten-Symbol ▸ „Diagnoseprotokoll öffnen", oder
+        Menu bar icon ▸ "Open diagnostics log", or
         `~/Library/Application Support/Tappi/diagnostics.log`.
-        Es enthält keine Fenstertitel oder sonstigen Inhalte — nur Startzustand und
-        Berechtigungen.
+        It contains no window titles or other content — only startup state and permissions.
       render: text
     validations:
       required: true
@@ -41,15 +40,15 @@ body:
   - type: input
     id: macos
     attributes:
-      label: macOS-Version
-      placeholder: "z. B. 15.3"
+      label: macOS version
+      placeholder: "e.g. 15.3"
     validations:
       required: true
 
   - type: dropdown
     id: arch
     attributes:
-      label: Prozessor
+      label: Processor
       options: [Apple Silicon, Intel]
     validations:
       required: true
@@ -57,20 +56,20 @@ body:
   - type: dropdown
     id: install
     attributes:
-      label: Woher stammt dein Tappi?
+      label: Where did your Tappi come from?
       description: >
-        Relevant, weil ad-hoc signierte Release-Builds erteilte Berechtigungen nach
-        jedem Update verlieren — selbst gebaute mit eigener Signatur nicht.
+        Relevant because ad-hoc signed release builds lose granted permissions after every
+        update, while self-built ones with their own signing identity do not.
       options:
-        - Release-Download
-        - Selbst gebaut (mit setup-signing.sh)
-        - Selbst gebaut (ohne setup-signing.sh)
+        - Release download
+        - Built myself (with setup-signing.sh)
+        - Built myself (without setup-signing.sh)
     validations:
       required: true
 
   - type: input
     id: keyboard
     attributes:
-      label: Tastaturlayout
-      description: Bei Problemen mit Tastenkürzeln wichtig — ISO und ANSI vergeben unterschiedliche Keycodes.
-      placeholder: "z. B. Deutsch (ISO)"
+      label: Keyboard layout
+      description: Important for shortcut problems — ISO and ANSI assign different keycodes.
+      placeholder: "e.g. German (ISO)"
