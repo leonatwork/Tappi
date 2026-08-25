@@ -106,6 +106,11 @@ final class SwitcherController: NSObject, EventTapDelegate {
     private func begin(scope: SwitchScope, backwards: Bool, sticky: Bool) {
         keyDownAt = CACurrentMediaTime()
         list = WindowStore.shared.sessionList(scope: scope)
+        if EventTap.debug {
+            NSLog("Tappi/session: begin scope=%@ candidates=%d store=%d sticky=%@",
+                  String(describing: scope), list.count,
+                  WindowStore.shared.entries.count, sticky ? "yes" : "no")
+        }
         guard list.count > 1 else {
             // Nothing to switch to, exactly like Windows with a single window.
             list = []

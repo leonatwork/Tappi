@@ -8,24 +8,63 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     override init() {
         super.init()
-        item.button?.image = NSImage(systemSymbolName: "rectangle.on.rectangle",
-                                     accessibilityDescription: "Tappi")
-        item.button?.image?.isTemplate = true
+        item.button?.image = StatusItemController.icon()
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
+    }
+
+    /// A 2×2 window grid with one tile selected — the switcher's own picture.
+    ///
+    /// Drawn rather than taken from SF Symbols: every stock window glyph
+    /// (`rectangle.on.rectangle` and friends) is two overlapping rectangles, which
+    /// is precisely the AirPlay / screen-mirroring motif and unreadable next to it
+    /// in the menu bar.
+    private static func icon() -> NSImage {
+        let tile = CGSize(width: 8, height: 6)
+        let gap: CGFloat = 2
+        let size = NSSize(width: tile.width * 2 + gap, height: tile.height * 2 + gap)
+        let image = NSImage(size: size, flipped: false) { _ in
+            for row in 0..<2 {
+                for column in 0..<2 {
+                    let rect = CGRect(x: CGFloat(column) * (tile.width + gap),
+                                      y: CGFloat(row) * (tile.height + gap),
+                                      width: tile.width, height: tile.height)
+                    let path = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5),
+                                            xRadius: 1.5, yRadius: 1.5)
+                    path.lineWidth = 1.2
+                    // Top-left is the selected window.
+                    if row == 1 && column == 0 {
+                        NSColor.black.setFill()
+                        path.fill()
+                    } else {
+                        NSColor.black.setStroke()
+                        path.stroke()
+                    }
+                }
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let modifier = settings.holdModifier.symbol
 
-        let status = SwitcherController.shared.isRunning && AX.isTrusted
-            ? "Aktiv · \(modifier)Tab · \(WindowStore.shared.entries.count) Fenster"
-            : "Inaktiv · Bedienungshilfen fehlen"
+        let running = SwitcherController.shared.isRunning && AX.isTrusted
+        let status: String
+        if !running {
+            status = "Inaktiv · Bedienungshilfen fehlen"
+        } else if !WindowStore.shared.isOperational {
+            status = "Keine Fenster erkannt · Freigabe prüfen"
+        } else {
+            status = "Aktiv · \(modifier)Tab · \(WindowStore.shared.entries.count) Fenster"
+        }
         menu.addItem(disabled(status))
 
-        if !AX.isTrusted {
+        if !running || !WindowStore.shared.isOperational {
             menu.addItem(action("Bedienungshilfen freigeben …", #selector(openAccessibility)))
         }
         menu.addItem(.separator())
@@ -65,6 +104,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(sizeItem)
 
         menu.addItem(.separator())
+        let replace = toggle("System-⌘Tab ersetzen", #selector(toggleReplaceSystemSwitcher),
+                             settings.replaceSystemSwitcher)
+        if settings.holdModifier != .command {
+            replace.isEnabled = false
+            replace.toolTip = "Nur relevant, wenn der Modifier ⌘ ist."
+        }
+        menu.addItem(replace)
+        if !SystemSwitcher.systemShortcutsEnabled && !SystemSwitcher.isSuppressed {
+            menu.addItem(action("System-⌘Tab wiederherstellen", #selector(restoreSystemSwitcher)))
+        }
         menu.addItem(toggle("Vorschaubilder", #selector(toggleThumbnails), settings.thumbnails))
         menu.addItem(toggle("Minimierte Fenster", #selector(toggleMinimized), settings.includeMinimized))
         menu.addItem(toggle("Fenster anderer Spaces", #selector(toggleSpaces), settings.includeOtherSpaces))
@@ -131,6 +180,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             ThumbnailProvider.shared.requestPermission()
         }
         ThumbnailProvider.shared.prepare()
+    }
+
+    @objc private func toggleReplaceSystemSwitcher() {
+        SettingsStore.shared.mutate { $0.replaceSystemSwitcher.toggle() }
+    }
+
+    @objc private func restoreSystemSwitcher() {
+        SystemSwitcher.restore()
     }
 
     @objc private func toggleMinimized() { SettingsStore.shared.mutate { $0.includeMinimized.toggle() } }

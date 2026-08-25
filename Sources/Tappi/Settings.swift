@@ -40,8 +40,13 @@ enum SwitchScope: String, Codable {
 }
 
 struct Settings: Codable {
-    /// Modifier held down during a session.
-    var holdModifier: HoldModifier = .option
+    /// Modifier held down during a session. ⌘ is the default because it sits
+    /// where Alt sits on a PC keyboard — directly left of the space bar — which is
+    /// what Windows muscle memory reaches for.
+    var holdModifier: HoldModifier = .command
+    /// Disable the system's own ⌘Tab switcher while Tappi owns that shortcut.
+    /// Without this macOS shows its switcher in front of ours.
+    var replaceSystemSwitcher: Bool = true
     /// Milliseconds to wait before the panel is drawn. 0 = Windows parity (instant).
     /// A small value (~120) hides the panel entirely during fast back-and-forth toggling.
     var showDelayMs: Int = 0
@@ -62,12 +67,15 @@ struct Settings: Codable {
     /// Start Tappi when the user logs in.
     var launchAtLogin: Bool = false
 
-    static let url: URL = {
+    /// `~/Library/Application Support/Tappi`
+    static let directory: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Tappi", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        return base.appendingPathComponent("settings.json")
+        return base
     }()
+
+    static let url: URL = directory.appendingPathComponent("settings.json")
 
     static func load() -> Settings {
         guard let data = try? Data(contentsOf: url),
@@ -94,6 +102,7 @@ final class SettingsStore {
     func mutate(_ body: (inout Settings) -> Void) {
         body(&value)
         value.save()
+        SystemSwitcher.apply()
         NotificationCenter.default.post(name: SettingsStore.changed, object: nil)
     }
 }

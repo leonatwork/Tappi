@@ -3,7 +3,7 @@
 Ein Fensterwechsler für macOS, der sich anfühlt wie Alt-Tab unter Windows — und zwar
 **sofort**. Kein Warten, kein Ruckeln, keine CPU-Spitzen beim Drücken.
 
-Standard-Hotkey: <kbd>⌥</kbd><kbd>Tab</kbd>.
+Standard-Hotkey: <kbd>⌘</kbd><kbd>Tab</kbd> — Tappi übernimmt die Tastenkombination vom System-Switcher.
 
 ---
 
@@ -46,17 +46,33 @@ Recherchiert und Regel für Regel umgesetzt:
 
 | Taste | Wirkung |
 |---|---|
-| <kbd>⌥</kbd><kbd>Tab</kbd> | Öffnen und vorwärts blättern |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>Tab</kbd> | Rückwärts blättern |
-| <kbd>⌥</kbd><kbd>`</kbd> | Nur Fenster der aktuellen App |
-| <kbd>⌥</kbd><kbd>⌃</kbd><kbd>Tab</kbd> | Liste fixiert öffnen (bleibt offen) |
+| <kbd>⌘</kbd><kbd>Tab</kbd> | Öffnen und vorwärts blättern |
+| <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Tab</kbd> | Rückwärts blättern |
+| <kbd>⌘</kbd><kbd>`</kbd> | Nur Fenster der aktuellen App |
+| <kbd>⌘</kbd><kbd>⌃</kbd><kbd>Tab</kbd> | Liste fixiert öffnen (bleibt offen) |
 | Pfeiltasten | Auswahl bewegen |
 | <kbd>⏎</kbd> / <kbd>Space</kbd> | Bestätigen |
 | <kbd>Esc</kbd> | Abbrechen |
 | <kbd>W</kbd> | Ausgewähltes Fenster schließen |
 | <kbd>Q</kbd> | App des ausgewählten Fensters beenden |
 
-Der Modifier lässt sich im Menüleisten-Menü auf <kbd>⌘</kbd> oder <kbd>⌃</kbd> umstellen.
+Der Modifier lässt sich im Menüleisten-Menü auf <kbd>⌥</kbd> oder <kbd>⌃</kbd> umstellen.
+<kbd>⌘</kbd> ist die Voreinstellung, weil die Taste dort liegt, wo auf einer PC-Tastatur Alt
+liegt — direkt links neben der Leertaste.
+
+### Der System-Switcher
+
+<kbd>⌘</kbd><kbd>Tab</kbd> ist keine normale Tastenkombination: Der Window Server behandelt sie
+als *Symbolic Hot Key*, noch bevor irgendein Event Tap sie zu sehen bekommt. Die Taste
+abzufangen genügt deshalb nicht — der System-Switcher erscheint trotzdem vor Tappis Panel.
+Tappi deaktiviert den Symbolic Hot Key daher, solange es läuft (private CoreGraphics-API,
+dieselbe, die AltTab dafür nutzt).
+
+Das ist mit einer Sicherung versehen: **Tappi nimmt <kbd>⌘</kbd><kbd>Tab</kbd> nur weg,
+solange es nachweislich arbeitsfähig ist** — Bedienungshilfen erteilt, Event Tap aktiv und
+Fenster tatsächlich sichtbar. Fällt eine dieser Bedingungen weg, geht die Tastenkombination
+sofort ans System zurück. Auch beim Beenden und bei `SIGTERM`/`SIGINT` wird sie
+wiederhergestellt; ein Start nach einem harten Abschuss repariert den Zustand.
 
 ## Geschwindigkeit
 
@@ -116,10 +132,38 @@ landet das Bundle nur in `./dist/`.
   von sich aus danach — erst wenn man „Vorschaubilder" im Menü einschaltet. Ohne diese
   Freigabe zeigen die Kacheln App-Icons, alles andere funktioniert unverändert.
 
-> **Hinweis zur Signatur:** `build.sh` signiert ad-hoc. macOS bindet erteilte
-> Berechtigungen an die Signatur, weshalb sie nach einem Neubau eventuell erneut erteilt
-> werden müssen. Wer eine Developer-ID besitzt, umgeht das mit
-> `CODESIGN_IDENTITY="Developer ID Application: …" ./build.sh --install`.
+### Wenn die Freigabe nicht greift
+
+Häufigster Stolperstein, und er sieht aus wie ein Fehler in Tappi: In den Systemeinstellungen
+steht Tappi mit gesetztem Häkchen in der Liste, trotzdem meldet das Menü
+„Bedienungshilfen fehlen".
+
+Ursache ist die Signatur. `build.sh` signiert ad-hoc, und macOS bindet erteilte
+Berechtigungen an den Prüfsummen-Hash der Binary. **Jeder Neubau erzeugt eine neue
+Identität**, für die der bestehende Eintrag nicht mehr gilt — das Häkchen bleibt sichtbar,
+greift aber ins Leere.
+
+Auflösen lässt sich das, indem man den alten Eintrag verwirft und neu erteilt:
+
+```bash
+tccutil reset Accessibility de.tappi.Tappi && open -a Tappi
+```
+
+Danach den Dialog bestätigen und Tappi in Systemeinstellungen ▸ Datenschutz & Sicherheit ▸
+Bedienungshilfen aktivieren.
+
+**Damit das nicht wiederkehrt**, mit einer stabilen Identität signieren statt ad-hoc. Mit
+einer Developer-ID:
+
+```bash
+CODESIGN_IDENTITY="Developer ID Application: Dein Name (TEAMID)" ./build.sh --install
+```
+
+Ohne Developer-ID tut es ein selbstsigniertes Zertifikat: In der Schlüsselbundverwaltung
+über *Zertifikatsassistent ▸ Zertifikat erstellen* eines vom Typ **Codesignatur** anlegen,
+im Schlüsselbund auf „Immer vertrauen" setzen und dessen Namen als `CODESIGN_IDENTITY`
+verwenden. Die Berechtigung überlebt dann jeden Neubau.
+
 
 ## Einstellungen
 
@@ -136,12 +180,25 @@ erscheint es nur, wenn man den Modifier tatsächlich gedrückt hält.
 
 ## Diagnose
 
+Tappi protokolliert seinen Startvorgang immer nach:
+
+```
+~/Library/Application Support/Tappi/diagnostics.log
+```
+
+Dort steht, ob die Bedienungshilfen greifen, ob der Event Tap installiert werden konnte und
+wie viele Fenster erkannt werden. Die Datei wird bei jedem Start neu angelegt.
+
+Für Details zur Tastenverarbeitung:
+
 ```bash
 TAPPI_DEBUG=1 /Applications/Tappi.app/Contents/MacOS/Tappi
 ```
 
 Protokolliert jedes gesehene Tastenereignis samt Entscheidung, ob es geschluckt wurde,
-sowie die Latenz jeder Sitzung.
+sowie die Latenz jeder Sitzung. Achtung: aus dem Terminal gestartet erbt Tappi die
+Berechtigungen des Terminals — für einen ehrlichen Berechtigungstest die App normal starten
+und in die Log-Datei schauen.
 
 ## Bekannte Grenzen
 
@@ -150,8 +207,11 @@ sowie die Latenz jeder Sitzung.
   unvollständig.
 - Der Wechsel zu einem Fenster auf einem anderen Space löst die übliche
   macOS-Space-Animation aus — daran kann Tappi nichts ändern.
-- Bei <kbd>⌘</kbd> als Modifier konkurriert Tappi mit dem System-Switcher von macOS.
-  <kbd>⌥</kbd> ist die konfliktfreie Voreinstellung.
+- Das Abschalten des System-Switchers nutzt eine private CoreGraphics-API. Eine
+  öffentliche Entsprechung gibt es nicht; ohne sie lässt sich <kbd>⌘</kbd><kbd>Tab</kbd>
+  nicht übernehmen.
+- Ad-hoc-Signaturen und macOS' Berechtigungsverwaltung vertragen sich schlecht — siehe
+  „Wenn die Freigabe nicht greift".
 - Getestet auf macOS 26.6, Apple Silicon. Minimum ist macOS 14.
 
 ## Aufbau
@@ -165,7 +225,9 @@ sowie die Latenz jeder Sitzung.
 | `SwitcherView.swift` | Layout und Zeichnen der Kacheln |
 | `ThumbnailProvider.swift` | Asynchrone Vorschaubilder via ScreenCaptureKit |
 | `AX.swift` | Accessibility-Aufrufe mit Timeout-Schutz |
+| `SystemSwitcher.swift` | Übernahme von ⌘Tab samt Rückgabe-Sicherung |
 | `StatusItem.swift` | Menüleisten-Menü |
+| `Diagnostics.swift` | Startprotokoll für ein Programm ohne Konsole |
 
 ## Lizenz
 

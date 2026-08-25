@@ -13,6 +13,14 @@ final class WindowStore {
     /// Windows in most-recently-used order. Index 0 is the current window.
     private(set) var entries: [WindowEntry] = []
 
+    /// Whether we are actually seeing windows.
+    ///
+    /// Worth having as a separate signal because a missing Accessibility grant
+    /// does not surface as an error: `AXIsProcessTrusted()` still reports `true`
+    /// for a process launched from a trusted parent, and the window queries simply
+    /// come back degraded. An empty list despite running apps is the real symptom.
+    var isOperational: Bool { !entries.isEmpty }
+
     private let queue = DispatchQueue(label: "de.tappi.windowstore", qos: .userInitiated)
     private var observers: [pid_t: AXObserver] = [:]
     private var refreshScheduled = false
@@ -227,6 +235,8 @@ final class WindowStore {
         if let focused, let entry = entries.first(where: { $0.matches(focused) }) {
             promote(entry)
         }
+        // Readiness may have just changed in either direction.
+        SystemSwitcher.apply()
         NotificationCenter.default.post(name: WindowStore.didChange, object: nil)
     }
 
