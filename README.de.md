@@ -135,6 +135,14 @@ Im Leerlauf: rund 1 % CPU-Zeit und ~60 MB RSS.
 
 ## Installation
 
+### Homebrew
+
+```bash
+brew install --cask --no-quarantine leonatwork/tap/tappi
+```
+
+`--no-quarantine` ist nötig, weil die Builds signiert, aber nicht notarisiert sind.
+
 ### Fertige App herunterladen
 
 Neuestes Release: **[Tappi.app herunterladen](https://github.com/leonatwork/Tappi/releases/latest)**

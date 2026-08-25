@@ -133,6 +133,14 @@ Idle cost: roughly 1 % CPU time and ~60 MB RSS.
 
 ## Installation
 
+### Homebrew
+
+```bash
+brew install --cask --no-quarantine leonatwork/tap/tappi
+```
+
+`--no-quarantine` is needed because the builds are signed but not notarised.
+
 ### Download the app
 
 Latest release: **[Download Tappi.app](https://github.com/leonatwork/Tappi/releases/latest)**
