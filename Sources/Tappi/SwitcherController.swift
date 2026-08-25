@@ -60,18 +60,18 @@ final class SwitcherController: NSObject, EventTapDelegate {
     func eventTap(keyDown keyCode: Int64, flags: CGEventFlags) -> Bool {
         let modifier = settings.holdModifier
         guard state != .idle else {
-            guard flags.contains(modifier.flag),
-                  keyCode == KeyCode.tab || keyCode == KeyCode.grave
+            let isAboveTab = KeyCode.aboveTab.contains(keyCode)
+            guard flags.contains(modifier.flag), keyCode == KeyCode.tab || isAboveTab
             else { return false }
             let sticky = modifier != .control && flags.contains(.maskControl)
-            begin(scope: keyCode == KeyCode.grave ? .currentApp : .allWindows,
+            begin(scope: isAboveTab ? .currentApp : .allWindows,
                   backwards: flags.contains(.maskShift),
                   sticky: sticky)
             return true
         }
 
         switch keyCode {
-        case KeyCode.tab, KeyCode.grave:
+        case let key where key == KeyCode.tab || KeyCode.aboveTab.contains(key):
             step(flags.contains(.maskShift) ? -1 : 1)
         case KeyCode.right, KeyCode.down:
             step(1)

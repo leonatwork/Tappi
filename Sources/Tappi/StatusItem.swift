@@ -93,7 +93,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(delayItem)
 
         let sizeMenu = NSMenu()
-        for value in [112.0, 148.0, 190.0, 240.0] {
+        for value in [112.0, 148.0, 190.0, 240.0, 320.0] {
             let entry = action("\(Int(value)) pt", #selector(setTileSize(_:)))
             entry.representedObject = value
             entry.state = settings.tileSize == value ? .on : .off

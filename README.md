@@ -48,13 +48,18 @@ Recherchiert und Regel für Regel umgesetzt:
 |---|---|
 | <kbd>⌘</kbd><kbd>Tab</kbd> | Öffnen und vorwärts blättern |
 | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Tab</kbd> | Rückwärts blättern |
-| <kbd>⌘</kbd><kbd>`</kbd> | Nur Fenster der aktuellen App |
+| <kbd>⌘</kbd><kbd>^</kbd> | Nur Fenster der aktuellen App (die Taste über Tab) |
 | <kbd>⌘</kbd><kbd>⌃</kbd><kbd>Tab</kbd> | Liste fixiert öffnen (bleibt offen) |
 | Pfeiltasten | Auswahl bewegen |
 | <kbd>⏎</kbd> / <kbd>Space</kbd> | Bestätigen |
 | <kbd>Esc</kbd> | Abbrechen |
 | <kbd>W</kbd> | Ausgewähltes Fenster schließen |
 | <kbd>Q</kbd> | App des ausgewählten Fensters beenden |
+
+Gemeint ist jeweils die Taste **direkt über Tab** — auf deutschen Tastaturen <kbd>^</kbd>,
+auf US-Tastaturen <kbd>`</kbd>. Die beiden Layouts vergeben dort unterschiedliche Keycodes
+(ISO meldet 10, ANSI meldet 50, und auf ISO liegt 50 stattdessen auf <kbd><</kbd>), deshalb
+akzeptiert Tappi beide.
 
 Der Modifier lässt sich im Menüleisten-Menü auf <kbd>⌥</kbd> oder <kbd>⌃</kbd> umstellen.
 <kbd>⌘</kbd> ist die Voreinstellung, weil die Taste dort liegt, wo auf einer PC-Tastatur Alt
@@ -132,37 +137,47 @@ landet das Bundle nur in `./dist/`.
   von sich aus danach — erst wenn man „Vorschaubilder" im Menü einschaltet. Ohne diese
   Freigabe zeigen die Kacheln App-Icons, alles andere funktioniert unverändert.
 
-### Wenn die Freigabe nicht greift
+### Damit die Freigabe erhalten bleibt
 
-Häufigster Stolperstein, und er sieht aus wie ein Fehler in Tappi: In den Systemeinstellungen
-steht Tappi mit gesetztem Häkchen in der Liste, trotzdem meldet das Menü
-„Bedienungshilfen fehlen".
+macOS bindet erteilte Berechtigungen an die Codesignatur — und eine ad-hoc-Signatur wird
+über den Hash der Binary identifiziert. **Jeder Neubau erzeugt damit eine neue Identität**,
+für die der bestehende Eintrag nicht mehr gilt: Das Häkchen bleibt sichtbar, greift aber ins
+Leere, und Tappi meldet „Bedienungshilfen fehlen", obwohl alles freigegeben aussieht.
 
-Ursache ist die Signatur. `build.sh` signiert ad-hoc, und macOS bindet erteilte
-Berechtigungen an den Prüfsummen-Hash der Binary. **Jeder Neubau erzeugt eine neue
-Identität**, für die der bestehende Eintrag nicht mehr gilt — das Häkchen bleibt sichtbar,
-greift aber ins Leere.
+Der Unterschied im Klartext:
 
-Auflösen lässt sich das, indem man den alten Eintrag verwirft und neu erteilt:
-
-```bash
-tccutil reset Accessibility de.tappi.Tappi && open -a Tappi
+```
+ad-hoc        designated => cdhash H"..."               ← ändert sich bei jedem Build
+Zertifikat    designated => certificate leaf = H"..."   ← bleibt stabil
 ```
 
-Danach den Dialog bestätigen und Tappi in Systemeinstellungen ▸ Datenschutz & Sicherheit ▸
-Bedienungshilfen aktivieren.
+Deshalb einmalig eine lokale Signaturidentität anlegen:
 
-**Damit das nicht wiederkehrt**, mit einer stabilen Identität signieren statt ad-hoc. Mit
-einer Developer-ID:
+```bash
+./setup-signing.sh
+```
+
+Das erzeugt ein selbstsigniertes Codesignatur-Zertifikat und legt es im Login-Schlüsselbund
+ab. Ein Admin-Passwort ist nicht nötig: `codesign` akzeptiert eine nicht als vertrauenswürdig
+markierte selbstsignierte Identität zum lokalen Signieren. `build.sh` verwendet sie danach
+automatisch — die Berechtigungen überstehen jeden weiteren Neubau.
+
+Wer eine Developer-ID hat, nimmt stattdessen diese:
 
 ```bash
 CODESIGN_IDENTITY="Developer ID Application: Dein Name (TEAMID)" ./build.sh --install
 ```
 
-Ohne Developer-ID tut es ein selbstsigniertes Zertifikat: In der Schlüsselbundverwaltung
-über *Zertifikatsassistent ▸ Zertifikat erstellen* eines vom Typ **Codesignatur** anlegen,
-im Schlüsselbund auf „Immer vertrauen" setzen und dessen Namen als `CODESIGN_IDENTITY`
-verwenden. Die Berechtigung überlebt dann jeden Neubau.
+### Freigaben zurücksetzen
+
+Wenn aus einer früheren ad-hoc-Installation noch tote Einträge stammen, hilft ein Reset:
+
+```bash
+tccutil reset Accessibility de.tappi.Tappi
+tccutil reset ScreenCapture de.tappi.Tappi
+```
+
+Danach Tappi neu starten und die Freigaben einmal erteilen.
 
 
 ## Einstellungen
@@ -211,7 +226,7 @@ und in die Log-Datei schauen.
   öffentliche Entsprechung gibt es nicht; ohne sie lässt sich <kbd>⌘</kbd><kbd>Tab</kbd>
   nicht übernehmen.
 - Ad-hoc-Signaturen und macOS' Berechtigungsverwaltung vertragen sich schlecht — siehe
-  „Wenn die Freigabe nicht greift".
+  „Damit die Freigabe erhalten bleibt".
 - Getestet auf macOS 26.6, Apple Silicon. Minimum ist macOS 14.
 
 ## Aufbau

@@ -17,10 +17,20 @@ cp "$BIN" "$APP/Contents/MacOS/Tappi"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
-# TCC (Accessibility, Screen Recording) keys off the code signature. An ad-hoc
-# signature changes on every build, which makes macOS forget the granted
-# permissions — set CODESIGN_IDENTITY to a real Developer ID to keep them.
-IDENTITY="${CODESIGN_IDENTITY:--}"
+# TCC (Accessibility, Screen Recording) keys off the code signature, and an ad-hoc
+# signature is identified by the hash of the binary — so every rebuild invalidates
+# the granted permissions. Prefer any real signing identity over ad-hoc; run
+# ./setup-signing.sh once to create a local one.
+IDENTITY="${CODESIGN_IDENTITY:-}"
+if [[ -z "$IDENTITY" ]]; then
+  if security find-identity -p codesigning 2>/dev/null | grep -q "Tappi Local Signing"; then
+    IDENTITY="Tappi Local Signing"
+  else
+    IDENTITY="-"
+    echo "!!  signing ad-hoc: macOS will forget granted permissions on every rebuild."
+    echo "!!  run ./setup-signing.sh once to avoid that."
+  fi
+fi
 echo "==> codesign (identity: $IDENTITY)"
 codesign --force --sign "$IDENTITY" --options runtime --timestamp=none "$APP" 2>/dev/null \
   || codesign --force --sign "$IDENTITY" "$APP"

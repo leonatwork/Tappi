@@ -4,7 +4,16 @@ import CoreGraphics
 enum KeyCode {
     static let tab: Int64 = 48
     static let escape: Int64 = 53
-    static let grave: Int64 = 50
+
+    /// The key directly above Tab — "⌘ plus the key above Tab" is what macOS and
+    /// Windows both use for "next window in this app".
+    ///
+    /// Which keycode that is depends on the physical keyboard, and the two are
+    /// swapped between layouts: ANSI boards put `grave` (50) above Tab, while ISO
+    /// boards — German included — report 10 there and move 50 to the extra key
+    /// beside the left shift. Accepting both makes the shortcut land on the key
+    /// the user is actually looking at, whatever they are typing on.
+    static let aboveTab: Set<Int64> = [50, 10]
     static let ret: Int64 = 36
     static let space: Int64 = 49
     static let left: Int64 = 123
