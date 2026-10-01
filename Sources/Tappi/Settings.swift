@@ -64,6 +64,11 @@ struct Settings: Codable {
     var tileSize: Double = 148
     /// Select the entry under the mouse pointer while the panel is open.
     var mouseHover: Bool = true
+    /// Show clickable window previews while hovering application Dock items.
+    /// Optional keeps settings files written by older versions decodable.
+    var dockPreviews: Bool? = true
+    /// Tile width for Dock window previews in points.
+    var dockPreviewSize: Double? = 190
     /// Start Tappi when the user logs in.
     var launchAtLogin: Bool = false
 

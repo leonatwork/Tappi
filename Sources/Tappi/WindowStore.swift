@@ -70,11 +70,19 @@ final class WindowStore {
     }
 
     /// The list a switching session operates on, after applying the user's filters.
+    func windows(for pid: pid_t) -> [WindowEntry] {
+        filteredEntries(entries.filter { $0.pid == pid })
+    }
+
     func sessionList(scope: SwitchScope) -> [WindowEntry] {
-        let settings = SettingsStore.shared.value
         let frontPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        return entries.filter { entry in
-            if scope == .currentApp && entry.pid != frontPid { return false }
+        let scoped = scope == .currentApp ? entries.filter { $0.pid == frontPid } : entries
+        return filteredEntries(scoped)
+    }
+
+    private func filteredEntries(_ candidates: [WindowEntry]) -> [WindowEntry] {
+        let settings = SettingsStore.shared.value
+        return candidates.filter { entry in
             if entry.isMinimized && !settings.includeMinimized { return false }
             if entry.isHidden && !settings.includeHiddenApps { return false }
             if !entry.isOnActiveSpace && !entry.isMinimized && !settings.includeOtherSpaces { return false }

@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if !storeStarted {
             WindowStore.shared.start()
+            DockPreviewController.shared.start()
             storeStarted = true
         }
 
@@ -121,6 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Disabling the system switcher outlives our process, so handing it back
         // is not optional.
         SystemSwitcher.restore(force: true)
+        DockPreviewController.shared.stop()
         SwitcherController.shared.stop()
     }
 

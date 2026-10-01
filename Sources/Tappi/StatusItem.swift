@@ -133,6 +133,19 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(toggle("Fenster anderer Spaces", #selector(toggleSpaces), settings.includeOtherSpaces))
         menu.addItem(toggle("Fenster ausgeblendeter Apps", #selector(toggleHidden), settings.includeHiddenApps))
         menu.addItem(toggle("Auswahl folgt der Maus", #selector(toggleHover), settings.mouseHover))
+        menu.addItem(toggle("Dock-Fenstervorschauen", #selector(toggleDockPreviews),
+                            settings.dockPreviews != false))
+        let dockSizeMenu = NSMenu()
+        for value in [112.0, 148.0, 190.0, 240.0, 320.0] {
+            let entry = action("\(Int(value)) pt", #selector(setDockPreviewSize(_:)))
+            entry.representedObject = value
+            entry.state = (settings.dockPreviewSize ?? 190) == value ? .on : .off
+            dockSizeMenu.addItem(entry)
+        }
+        let dockSizeItem = NSMenuItem(title: "Dock-Vorschaugröße", action: nil, keyEquivalent: "")
+        dockSizeItem.submenu = dockSizeMenu
+        dockSizeItem.isEnabled = settings.dockPreviews != false
+        menu.addItem(dockSizeItem)
 
         menu.addItem(.separator())
         menu.addItem(toggle("Bei der Anmeldung starten", #selector(toggleLaunchAtLogin), settings.launchAtLogin))
@@ -241,6 +254,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func toggleSpaces() { SettingsStore.shared.mutate { $0.includeOtherSpaces.toggle() } }
     @objc private func toggleHidden() { SettingsStore.shared.mutate { $0.includeHiddenApps.toggle() } }
     @objc private func toggleHover() { SettingsStore.shared.mutate { $0.mouseHover.toggle() } }
+    @objc private func toggleDockPreviews() {
+        SettingsStore.shared.mutate { $0.dockPreviews = !($0.dockPreviews ?? true) }
+    }
+
+    @objc private func setDockPreviewSize(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? Double else { return }
+        SettingsStore.shared.mutate { $0.dockPreviewSize = value }
+    }
 
     @objc private func toggleLaunchAtLogin() {
         let enabling = !settings.launchAtLogin

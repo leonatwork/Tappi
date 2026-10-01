@@ -56,6 +56,9 @@ Researched and implemented rule by rule:
 - Holding <kbd>⌃</kbd> as well opens the list **sticky** — it stays open after you let the
   modifier go.
 - Hovering selects, clicking switches, and the "✕" on a tile closes that window.
+- Hovering an application's Dock icon shows clickable previews of its open windows.
+- The grid always fits the active display, shrinking or adding columns as necessary and
+  making use of ultrawide screens.
 
 ## Keys
 
@@ -233,9 +236,9 @@ Then restart Tappi and grant the permissions once.
 
 ## Settings
 
-From the menu bar icon: modifier, show delay, tile size (112–320 pt), previews, minimized
-windows, windows on other Spaces, windows of hidden apps, mouse selection and launch at
-login. Plus *Open diagnostics log* and *Restart Tappi*.
+From the menu bar icon: modifier, show delay, tile size (112–320 pt), previews, Dock
+window previews with their own size setting (112–320 pt), minimized windows, windows on other Spaces, windows of hidden apps,
+mouse selection and launch at login. Plus *Open diagnostics log* and *Restart Tappi*.
 
 The status line at the top of the menu tells you what is wrong: missing Accessibility, no
 windows detected, or "without previews".

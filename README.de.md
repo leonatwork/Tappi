@@ -238,7 +238,7 @@ Danach Tappi neu starten und die Freigaben einmal erteilen.
 ## Einstellungen
 
 Über das Menüleisten-Symbol: Modifier, Einblendeverzögerung, Kachelgröße (112–320 pt),
-Vorschaubilder, minimierte Fenster, Fenster anderer Spaces, Fenster ausgeblendeter Apps,
+Dock-Fenstervorschauen samt eigener Vorschaugröße (112–320 pt), Vorschaubilder, minimierte Fenster, Fenster anderer Spaces, Fenster ausgeblendeter Apps,
 Auswahl-per-Maus und Autostart. Dazu *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
 
 Die Statuszeile ganz oben im Menü sagt, woran es hakt: fehlende Bedienungshilfen, keine

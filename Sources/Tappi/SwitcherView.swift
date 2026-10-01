@@ -17,13 +17,36 @@ struct TileLayout {
     static let titleHeight: CGFloat = 18
 
     static func compute(count: Int, on screen: NSScreen) -> TileLayout {
-        let settings = SettingsStore.shared.value
-        let width = max(96, CGFloat(settings.tileSize))
-        let height = titleHeight + innerPadding + (width * 0.60) + innerPadding * 2
+        compute(count: count, availableSize: CGSize(width: screen.visibleFrame.width * 0.96,
+                                                     height: screen.visibleFrame.height * 0.92),
+                preferredWidth: CGFloat(SettingsStore.shared.value.tileSize))
+    }
 
-        let available = screen.visibleFrame.width * 0.92 - outerPadding * 2
-        let fitting = max(1, Int((available + gap) / (width + gap)))
-        let columns = max(1, min(min(settings.maxColumns, fitting), count))
+    /// Finds the largest tiles that fit every item. Considering every possible
+    /// column count avoids both vertical overflow on laptop panels and artificial
+    /// seven-column wrapping on ultrawide displays.
+    static func compute(count: Int, availableSize: CGSize, preferredWidth: CGFloat) -> TileLayout {
+        guard count > 0 else { return TileLayout() }
+        let usableWidth = max(1, availableSize.width - outerPadding * 2)
+        let usableHeight = max(1, availableSize.height - outerPadding * 2)
+        var bestColumns = 1
+        var bestWidth: CGFloat = 0
+
+        for columns in 1...count {
+            let rows = Int(ceil(Double(count) / Double(columns)))
+            let widthLimit = (usableWidth - CGFloat(columns - 1) * gap) / CGFloat(columns)
+            let heightLimit = ((usableHeight - CGFloat(rows - 1) * gap) / CGFloat(rows)
+                - titleHeight - innerPadding * 3) / 0.60
+            let candidate = min(preferredWidth, widthLimit, heightLimit)
+            if candidate > bestWidth {
+                bestWidth = candidate
+                bestColumns = columns
+            }
+        }
+
+        let width = max(0.01, bestWidth)
+        let height = titleHeight + innerPadding + (width * 0.60) + innerPadding * 2
+        let columns = bestColumns
         let rows = Int(ceil(Double(count) / Double(columns)))
 
         var layout = TileLayout()

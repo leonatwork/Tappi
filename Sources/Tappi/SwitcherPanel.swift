@@ -17,7 +17,11 @@ final class SwitcherPanel {
     private let selectionView: NSView
     private let content: SwitcherContentView
     private var layout = TileLayout()
-    private var entries: [WindowEntry] = []
+    private(set) var entries: [WindowEntry] = []
+
+    func containsScreenPoint(_ point: CGPoint) -> Bool {
+        isPresented && window.frame.contains(point)
+    }
 
     init() {
         window = NSPanel(contentRect: CGRect(x: 0, y: 0, width: 10, height: 10),
@@ -79,30 +83,62 @@ final class SwitcherPanel {
     // MARK: - Presenting
 
     func present(entries: [WindowEntry], selected: Int) {
-        let screen = NSScreen.main ?? NSScreen.screens.first ?? NSScreen.screens[0]
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) })
+            ?? NSScreen.main ?? NSScreen.screens[0]
+        let layout = TileLayout.compute(count: entries.count, on: screen)
+        let frame = CGRect(x: screen.visibleFrame.midX - layout.panelSize.width / 2,
+                           y: screen.visibleFrame.midY - layout.panelSize.height / 2,
+                           width: layout.panelSize.width, height: layout.panelSize.height)
+        configure(entries: entries, layout: layout, frame: frame, selected: selected)
+    }
+
+    func presentDock(entries: [WindowEntry], on screen: NSScreen, anchoredTo dockItem: CGRect) {
+        let preferred = CGFloat(SettingsStore.shared.value.dockPreviewSize ?? 190)
+        let available = CGSize(width: screen.visibleFrame.width * 0.90,
+                               height: min(screen.visibleFrame.height * 0.45, 420))
+        let layout = TileLayout.compute(count: entries.count, availableSize: available,
+                                        preferredWidth: preferred)
+        let visible = screen.visibleFrame
+        let gap: CGFloat = 8
+        var origin = CGPoint(x: dockItem.midX - layout.panelSize.width / 2,
+                             y: dockItem.maxY + gap)
+        let distances = [dockItem.minY - screen.frame.minY,
+                         screen.frame.maxY - dockItem.maxY,
+                         dockItem.minX - screen.frame.minX,
+                         screen.frame.maxX - dockItem.maxX]
+        switch distances.firstIndex(of: distances.min()!) {
+        case 1:
+            origin.y = dockItem.minY - layout.panelSize.height - gap
+        case 2:
+            origin.x = dockItem.maxX + gap
+            origin.y = dockItem.midY - layout.panelSize.height / 2
+        case 3:
+            origin.x = dockItem.minX - layout.panelSize.width - gap
+            origin.y = dockItem.midY - layout.panelSize.height / 2
+        default:
+            break
+        }
+        origin.x = min(max(origin.x, visible.minX + 8), visible.maxX - layout.panelSize.width - 8)
+        origin.y = min(max(origin.y, visible.minY + 8), visible.maxY - layout.panelSize.height - 8)
+        let frame = CGRect(origin: origin, size: layout.panelSize)
+        configure(entries: entries, layout: layout, frame: frame, selected: nil)
+    }
+
+    private func configure(entries: [WindowEntry], layout: TileLayout, frame: CGRect,
+                           selected: Int?) {
         self.entries = entries
-        layout = TileLayout.compute(count: entries.count, on: screen)
-
-        let frame = CGRect(
-            x: screen.visibleFrame.midX - layout.panelSize.width / 2,
-            y: screen.visibleFrame.midY - layout.panelSize.height / 2,
-            width: layout.panelSize.width, height: layout.panelSize.height)
+        self.layout = layout
         window.setFrame(frame, display: false)
-
-        let bounds = CGRect(origin: .zero, size: layout.panelSize)
-        content.frame = bounds
+        content.frame = CGRect(origin: .zero, size: layout.panelSize)
         content.entries = entries
         content.layout = layout
         content.needsDisplay = true
-
+        selectionView.isHidden = selected == nil
         applySelectionColors()
-        select(selected, animated: false)
-
+        if let selected { select(selected, animated: false) }
         window.orderFrontRegardless()
         isPresented = true
-
-        // Previews are requested a run loop turn later, so nothing about capturing
-        // can share a turn with putting the panel on screen.
         DispatchQueue.main.async {
             ThumbnailProvider.shared.prepare { [weak self] in self?.requestThumbnails() }
         }
