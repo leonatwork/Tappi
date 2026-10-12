@@ -15,6 +15,10 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Tappi"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+# One Localizable.strings per language; the Language menu picks among them.
+cp -R Resources/*.lproj "$APP/Contents/Resources/"
+echo "==> app icon"
+swift scripts/generate-icon.swift "$APP/Contents/Resources/AppIcon.icns"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 # Stamp a version: an explicit VERSION wins, otherwise the newest git tag, else

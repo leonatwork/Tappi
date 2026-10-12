@@ -1,0 +1,118 @@
+/* Tappi — ko. Keys must exist in every language: scripts/check-localizations.swift */
+
+/* Menu status line: Tappi cannot run because Accessibility is not granted. */
+"status.inactive" = "비활성 · 손쉬운 사용 권한 없음";
+
+/* Menu status line: running, but no windows could be read. */
+"status.noWindows" = "윈도우가 감지되지 않음 · 권한을 확인하십시오";
+
+/* Menu status line with exactly one window. %1$@ = modifier symbol (e.g. ⌘), %2$ld = window count, %3$@ = optional suffix (status.withoutPreviews). */
+"status.active.one" = "활성 · %1$@Tab · 윈도우 %2$ld개%3$@";
+
+/* Menu status line with any other number of windows. Same arguments as status.active.one. */
+"status.active.other" = "활성 · %1$@Tab · 윈도우 %2$ld개%3$@";
+
+/* Appended to the status line when previews are on but Screen Recording is missing. Keep the leading space. */
+"status.withoutPreviews" = " · 미리보기 없음";
+
+/* Menu item that opens the Accessibility list in System Settings. Use Apple's name for the pane. */
+"menu.grantAccessibility" = "손쉬운 사용 권한 부여…";
+
+/* Submenu title for the interface language. */
+"menu.language" = "언어";
+
+/* Language submenu entry that follows the macOS preferred languages. */
+"language.system" = "시스템 기본값";
+
+/* Submenu title: which modifier key is held down while switching. */
+"menu.modifier" = "보조 키";
+
+/* Name of the Option key, with its PC equivalent in parentheses. */
+"modifier.option" = "Option (Alt)";
+
+/* Name of the Command key. */
+"modifier.command" = "Command";
+
+/* Name of the Control key. */
+"modifier.control" = "Control";
+
+/* Submenu title: how long to wait before the switcher panel is drawn. */
+"menu.showDelay" = "표시 지연";
+
+/* Show delay of 0 ms. */
+"delay.instant" = "즉시(Windows와 동일)";
+
+/* Submenu title: size of one window tile in the switcher. */
+"menu.tileSize" = "타일 크기";
+
+/* Submenu title: maximum number of tiles per row. */
+"menu.tilesPerRow" = "행당 타일 수";
+
+/* Toggle: disable the macOS app switcher while Tappi owns ⌘Tab. */
+"menu.replaceSystemSwitcher" = "시스템 ⌘Tab 대체";
+
+/* Tooltip on the disabled toggle above. */
+"tooltip.replaceSystemSwitcher" = "보조 키가 ⌘일 때만 적용됩니다.";
+
+/* Menu item that hands ⌘Tab back to macOS. */
+"menu.restoreSystemSwitcher" = "시스템 ⌘Tab 복원";
+
+/* Toggle: live window thumbnails in the switcher. */
+"menu.windowPreviews" = "윈도우 미리보기";
+
+/* Menu item that requests Screen Recording. Use Apple's name for the pane. Also quoted in a diagnostics message. */
+"menu.grantScreenRecording" = "화면 기록 권한 부여…";
+
+/* Tooltip on the item above. */
+"tooltip.grantScreenRecording" = "이 권한이 없으면 Tappi는 윈도우 미리보기 대신 앱 아이콘을 표시합니다.";
+
+/* Menu item: Screen Recording only takes effect after a restart. */
+"menu.restartForPreviews" = "다시 시작하여 미리보기 활성화";
+
+/* Toggle: list minimized windows. */
+"menu.minimizedWindows" = "최소화된 윈도우";
+
+/* Toggle: list windows on other Spaces (Mission Control desktops). Use Apple's term for Spaces. */
+"menu.otherSpaces" = "다른 Space의 윈도우";
+
+/* Toggle: list windows of apps hidden with ⌘H. */
+"menu.hiddenApps" = "가려진 앱의 윈도우";
+
+/* Toggle: hovering a tile selects it. */
+"menu.mouseHover" = "선택 항목이 마우스를 따라감";
+
+/* Toggle: start Tappi at login. */
+"menu.launchAtLogin" = "로그인 시 실행";
+
+/* Menu item that opens settings.json in a text editor. */
+"menu.openSettingsFile" = "설정 파일 열기";
+
+/* Menu item that opens diagnostics.log. */
+"menu.openDiagnostics" = "진단 로그 열기";
+
+/* Menu item. */
+"menu.restart" = "Tappi 다시 시작";
+
+/* Menu item. */
+"menu.quit" = "Tappi 종료";
+
+/* Submenu title listing the other tools of the same package. */
+"menu.moreApps" = "좋아할 만한 다른 앱";
+
+/* Short description after “Klemmi – ” in the More apps submenu. */
+"moreApps.klemmi" = "Win+V 같은 클립보드 기록";
+
+/* Short description after “Snapline – ” in the More apps submenu. Snap Layouts, Aero Snap and Snap Assist are Windows feature names. */
+"moreApps.snapline" = "Snap Layouts, Aero Snap, Snap Assist";
+
+/* Short description after “Snapboard – ” in the More apps submenu. */
+"moreApps.snapboard" = "Snipping Tool 스타일 스크린샷을 바로 클립보드로";
+
+/* Last entry of the More apps submenu: opens the list of all tools in the package. */
+"moreApps.package" = "전체 패키지…";
+
+/* Diagnostics log line. Use Apple's names for System Settings, Privacy & Security and Accessibility. */
+"diagnostics.eventTapRefused" = "손쉬운 사용 권한이 허용된 것으로 표시되지만 키 입력 감지가 거부되었습니다 — 시스템 설정 ▸ 개인정보 보호 및 보안 ▸ 손쉬운 사용에서 Tappi를 제거한 후 다시 추가하십시오(다시 빌드하면 이전 항목이 무효화됨)";
+
+/* Diagnostics log line. %@ = the menu item menu.grantScreenRecording. */
+"diagnostics.screenRecordingDenied" = "화면 기록이 거부됨 — 미리보기 대신 앱 아이콘을 표시합니다. 메뉴 막대 아이콘 ▸ ‘%@’에서 허용하십시오";

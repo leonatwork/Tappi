@@ -4,6 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/leonatwork/Tappi?sort=semver)](https://github.com/leonatwork/Tappi/releases/latest)
 ![Plattform](https://img.shields.io/badge/macOS-14%2B-lightgrey)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+[![Package: I love macOS, but I miss some Windows features](https://img.shields.io/badge/Package-I_love_macOS%2C_but_I_miss_some_Windows_features-0A84FF)](https://github.com/search?q=topic%3Ai-love-macos-but-i-miss-windows-features+user%3Aleonatwork&type=repositories)
 
 Ein Fensterwechsler für macOS, der sich anfühlt wie Alt-Tab unter Windows — und zwar
 **sofort**. Kein Warten, kein Ruckeln, keine CPU-Spitzen beim Drücken.
@@ -14,6 +15,21 @@ Standard-Hotkey: <kbd>⌘</kbd><kbd>Tab</kbd> — Tappi übernimmt die Tastenkom
 aktualisiert.*
 
 ---
+
+## Teil des Pakets
+
+Tappi ist eines von vier Tools im Paket
+**[I love macOS, but I miss some Windows features](https://github.com/search?q=topic%3Ai-love-macos-but-i-miss-windows-features+user%3Aleonatwork&type=repositories)**:
+
+| Tool | Was es auf den Mac bringt | Download |
+|---|---|---|
+| **Tappi** (dieses Tool) | Alt+Tab zwischen Fenstern statt Apps | [Neuestes Release](https://github.com/leonatwork/Tappi/releases/latest) |
+| [Klemmi](https://github.com/leonatwork/Klemmi) | Zwischenablage-Verlauf wie Win+V, mit Quell-App | [Neuestes Release](https://github.com/leonatwork/Klemmi/releases/latest) |
+| [Snapline](https://github.com/leonatwork/snapline) | Snap Layouts, Aero Snap und Snap Assist aus Windows 11 | [Neuestes Release](https://github.com/leonatwork/snapline/releases/latest) |
+| [Snapboard](https://github.com/leonatwork/snapboard) | Screenshots wie mit dem Snipping Tool, direkt in die Zwischenablage | [Neuestes Release](https://github.com/leonatwork/snapboard/releases/latest) |
+
+Dir fehlt mehr als eine dieser Funktionen? Hol dir alle vier — jedes Tool läuft für sich,
+zusammen fühlt sich macOS wie zu Hause an.
 
 ## Screenshot
 
@@ -135,14 +151,6 @@ Im Leerlauf: rund 1 % CPU-Zeit und ~60 MB RSS.
 
 ## Installation
 
-### Homebrew
-
-```bash
-brew install --cask --no-quarantine leonatwork/tap/tappi
-```
-
-`--no-quarantine` ist nötig, weil die Builds signiert, aber nicht notarisiert sind.
-
 ### Fertige App herunterladen
 
 Neuestes Release: **[Tappi.app herunterladen](https://github.com/leonatwork/Tappi/releases/latest)**
@@ -242,9 +250,16 @@ Danach Tappi neu starten und die Freigaben einmal erteilen.
 Spaces, Fenster ausgeblendeter Apps, Auswahl-per-Maus und Autostart. Dazu
 *Einstellungsdatei öffnen*, *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
 
-Das Untermenü *Sprache* bietet *Systemstandard*, *English* und *Deutsch*. Standardmäßig
-folgt Tappi den bevorzugten macOS-Sprachen und verwendet Englisch als Fallback. Änderungen
-werden beim nächsten Öffnen des Menüs sichtbar und bleiben nach einem Neustart erhalten.
+Die Oberfläche gibt es auf Englisch, Deutsch, Französisch, Spanisch, Italienisch,
+Portugiesisch (Brasilien), Niederländisch, Japanisch, vereinfachtem Chinesisch und
+Koreanisch. Das Untermenü *Sprache* bietet *Systemstandard* und jede dieser Sprachen unter
+ihrem eigenen Namen: *English*, *Deutsch*, *Français*, *Español*, *Italiano*,
+*Português (Brasil)*, *Nederlands*, *日本語*, *简体中文* und *한국어*. *Systemstandard* folgt
+den bevorzugten macOS-Sprachen und verwendet Englisch als Fallback. Änderungen werden beim
+nächsten Öffnen des Menüs sichtbar und bleiben nach einem Neustart erhalten.
+
+Außerdem gibt es im Menü *Weitere Apps, die dir gefallen könnten* mit Links zu den anderen
+Tools aus dem [Paket](#teil-des-pakets).
 
 Die Statuszeile ganz oben im Menü sagt, woran es hakt: fehlende Bedienungshilfen, keine
 erkannten Fenster oder „ohne Vorschauen".
@@ -310,6 +325,9 @@ und in die Log-Datei schauen.
 | `AX.swift` | Accessibility-Aufrufe mit Timeout-Schutz |
 | `SystemSwitcher.swift` | Übernahme von ⌘Tab samt Rückgabe-Sicherung |
 | `StatusItem.swift` | Menüleisten-Menü |
+| `InterfaceLanguage.swift` | Oberflächensprache und Textauswahl |
+| `Resources/*.lproj` | Übersetzungen, eine `Localizable.strings` je Sprache |
+| `scripts/generate-icon.swift` | Zeichnet das App-Symbol; `build.sh` ruft es auf |
 | `Diagnostics.swift` | Startprotokoll für ein Programm ohne Konsole |
 
 ## Mitwirken

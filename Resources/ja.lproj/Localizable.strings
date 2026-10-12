@@ -1,0 +1,118 @@
+/* Tappi — ja. Keys must exist in every language: scripts/check-localizations.swift */
+
+/* Menu status line: Tappi cannot run because Accessibility is not granted. */
+"status.inactive" = "停止中 · アクセシビリティの許可がありません";
+
+/* Menu status line: running, but no windows could be read. */
+"status.noWindows" = "ウインドウが見つかりません · 許可を確認してください";
+
+/* Menu status line with exactly one window. %1$@ = modifier symbol (e.g. ⌘), %2$ld = window count, %3$@ = optional suffix (status.withoutPreviews). */
+"status.active.one" = "動作中 · %1$@Tab · %2$ld 個のウインドウ%3$@";
+
+/* Menu status line with any other number of windows. Same arguments as status.active.one. */
+"status.active.other" = "動作中 · %1$@Tab · %2$ld 個のウインドウ%3$@";
+
+/* Appended to the status line when previews are on but Screen Recording is missing. Keep the leading space. */
+"status.withoutPreviews" = " · プレビューなし";
+
+/* Menu item that opens the Accessibility list in System Settings. Use Apple's name for the pane. */
+"menu.grantAccessibility" = "アクセシビリティを許可…";
+
+/* Submenu title for the interface language. */
+"menu.language" = "言語";
+
+/* Language submenu entry that follows the macOS preferred languages. */
+"language.system" = "システムのデフォルト";
+
+/* Submenu title: which modifier key is held down while switching. */
+"menu.modifier" = "修飾キー";
+
+/* Name of the Option key, with its PC equivalent in parentheses. */
+"modifier.option" = "Option (Alt)";
+
+/* Name of the Command key. */
+"modifier.command" = "Command";
+
+/* Name of the Control key. */
+"modifier.control" = "Control";
+
+/* Submenu title: how long to wait before the switcher panel is drawn. */
+"menu.showDelay" = "表示までの遅延";
+
+/* Show delay of 0 ms. */
+"delay.instant" = "即時（Windowsと同じ）";
+
+/* Submenu title: size of one window tile in the switcher. */
+"menu.tileSize" = "タイルのサイズ";
+
+/* Submenu title: maximum number of tiles per row. */
+"menu.tilesPerRow" = "1行あたりのタイル数";
+
+/* Toggle: disable the macOS app switcher while Tappi owns ⌘Tab. */
+"menu.replaceSystemSwitcher" = "システムの⌘Tabを置き換える";
+
+/* Tooltip on the disabled toggle above. */
+"tooltip.replaceSystemSwitcher" = "修飾キーが⌘の場合のみ有効です。";
+
+/* Menu item that hands ⌘Tab back to macOS. */
+"menu.restoreSystemSwitcher" = "システムの⌘Tabを復元";
+
+/* Toggle: live window thumbnails in the switcher. */
+"menu.windowPreviews" = "ウインドウのプレビュー";
+
+/* Menu item that requests Screen Recording. Use Apple's name for the pane. Also quoted in a diagnostics message. */
+"menu.grantScreenRecording" = "画面収録を許可…";
+
+/* Tooltip on the item above. */
+"tooltip.grantScreenRecording" = "この許可がない場合、Tappiはウインドウのプレビューの代わりにAppのアイコンを表示します。";
+
+/* Menu item: Screen Recording only takes effect after a restart. */
+"menu.restartForPreviews" = "再起動してプレビューを有効にする";
+
+/* Toggle: list minimized windows. */
+"menu.minimizedWindows" = "最小化したウインドウ";
+
+/* Toggle: list windows on other Spaces (Mission Control desktops). Use Apple's term for Spaces. */
+"menu.otherSpaces" = "ほかの操作スペースのウインドウ";
+
+/* Toggle: list windows of apps hidden with ⌘H. */
+"menu.hiddenApps" = "非表示のAppのウインドウ";
+
+/* Toggle: hovering a tile selects it. */
+"menu.mouseHover" = "選択がマウスに追従";
+
+/* Toggle: start Tappi at login. */
+"menu.launchAtLogin" = "ログイン時に起動";
+
+/* Menu item that opens settings.json in a text editor. */
+"menu.openSettingsFile" = "設定ファイルを開く";
+
+/* Menu item that opens diagnostics.log. */
+"menu.openDiagnostics" = "診断ログを開く";
+
+/* Menu item. */
+"menu.restart" = "Tappiを再起動";
+
+/* Menu item. */
+"menu.quit" = "Tappiを終了";
+
+/* Submenu title listing the other tools of the same package. */
+"menu.moreApps" = "ほかのおすすめApp";
+
+/* Short description after “Klemmi – ” in the More apps submenu. */
+"moreApps.klemmi" = "Win+Vのようなクリップボード履歴";
+
+/* Short description after “Snapline – ” in the More apps submenu. Snap Layouts, Aero Snap and Snap Assist are Windows feature names. */
+"moreApps.snapline" = "Snap Layouts、Aero Snap、Snap Assist";
+
+/* Short description after “Snapboard – ” in the More apps submenu. */
+"moreApps.snapboard" = "Snipping Toolのようなスクリーンショットを直接クリップボードへ";
+
+/* Last entry of the More apps submenu: opens the list of all tools in the package. */
+"moreApps.package" = "パッケージ全体…";
+
+/* Diagnostics log line. Use Apple's names for System Settings, Privacy & Security and Accessibility. */
+"diagnostics.eventTapRefused" = "アクセシビリティは許可済みと報告されていますが、キー入力の取得が拒否されました — システム設定 ▸ プライバシーとセキュリティ ▸ アクセシビリティ からTappiを削除して、もう一度追加してください（再ビルドすると以前の項目は無効になります）";
+
+/* Diagnostics log line. %@ = the menu item menu.grantScreenRecording. */
+"diagnostics.screenRecordingDenied" = "画面収録が拒否されました — プレビューの代わりにAppのアイコンを表示します。メニューバーのアイコン ▸「%@」から許可してください";
