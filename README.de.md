@@ -319,6 +319,18 @@ haben. Änderungen pro Version stehen im **[CHANGELOG.md](CHANGELOG.md)**.
 Bei Fehlerberichten bitte das Diagnoseprotokoll beilegen (Menüleisten-Symbol ▸
 *Diagnoseprotokoll öffnen*). Es enthält keine Fenstertitel oder sonstigen Inhalte.
 
+## Open Source & Premium
+
+Tappi ist und bleibt Open Source unter der MIT-Lizenz. Alles in diesem Repository darf
+weiterhin frei genutzt, verändert und weitergegeben werden.
+
+Geplant sind zwei Wege, das Projekt zu unterstützen:
+
+- **Sponsoring**: freiwillige Unterstützung der Weiterentwicklung. Der Link folgt hier,
+  sobald er eingerichtet ist.
+- **Premium-Erweiterungen**: optionale Zusatzfunktionen als separates, kostenpflichtiges
+  Paket. Sie bauen auf dem freien Kern auf und nehmen ihm nie Funktionen weg.
+
 ## Lizenz
 
 [MIT](LICENSE) — freie Nutzung, Änderung und Weitergabe, ohne Gewährleistung.
