@@ -163,9 +163,10 @@ Apple developer account. Alternatively:
 xattr -dr com.apple.quarantine /Applications/Tappi.app
 ```
 
-> Release builds are ad-hoc signed. macOS ties granted permissions to the signature, so
-> they **have to be granted again after every update**. If that bothers you, build it
-> yourself — it takes a minute and solves the problem for good.
+> Release builds after 1.1.0 are signed with a stable certificate, "leonatwork Code
+> Signing". Permissions you grant **survive later updates**. Coming from 1.1.0 or earlier,
+> which were ad-hoc signed, you grant them once more. The certificate is self-signed, not
+> issued by Apple, so the first-launch step above is still needed.
 
 ### Build it yourself (recommended)
 
@@ -221,6 +222,9 @@ This generates a self-signed code signing certificate and puts it in your login 
 No admin password is needed: `codesign` accepts an untrusted self-signed identity for
 local signing. `build.sh` picks it up automatically from then on, and the permissions
 survive every further rebuild.
+
+Your own builds and the release builds use different certificates. Switching between the
+two therefore counts as a new app for macOS, and the permissions have to be granted again.
 
 With a Developer ID, use that instead:
 
