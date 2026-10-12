@@ -33,13 +33,17 @@ fi
 # ./setup-signing.sh once to create a local one.
 IDENTITY="${CODESIGN_IDENTITY:-}"
 if [[ -z "$IDENTITY" ]]; then
-  if security find-identity -p codesigning 2>/dev/null | grep -q "Tappi Local Signing"; then
-    IDENTITY="Tappi Local Signing"
-  else
-    IDENTITY="-"
-    echo "!!  signing ad-hoc: macOS will forget granted permissions on every rebuild."
-    echo "!!  run ./setup-signing.sh once to avoid that."
-  fi
+  for candidate in "leonatwork Code Signing" "Tappi Local Signing"; do
+    if security find-identity -p codesigning 2>/dev/null | grep -q "$candidate"; then
+      IDENTITY="$candidate"
+      break
+    fi
+  done
+  IDENTITY="${IDENTITY:--}"
+fi
+if [[ "$IDENTITY" == "-" ]]; then
+  echo "!!  signing ad-hoc: macOS will forget granted permissions on every rebuild."
+  echo "!!  run ./setup-signing.sh once to avoid that."
 fi
 echo "==> codesign (identity: $IDENTITY)"
 codesign --force --sign "$IDENTITY" --options runtime --timestamp=none "$APP" 2>/dev/null \
