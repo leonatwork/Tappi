@@ -15,6 +15,7 @@ let package = Package(
                 .linkedFramework("CoreGraphics"),
                 .linkedFramework("QuartzCore"),
             ]
-        )
+        ),
+        .testTarget(name: "TappiTests", dependencies: ["Tappi"])
     ]
 )

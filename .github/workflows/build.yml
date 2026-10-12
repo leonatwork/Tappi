@@ -28,5 +28,8 @@ jobs:
             exit 1
           fi
 
+      - name: Test
+        run: swift test -c release
+
       - name: Assemble app bundle
         run: ./build.sh

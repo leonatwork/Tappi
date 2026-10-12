@@ -40,6 +40,8 @@ enum SwitchScope: String, Codable {
 }
 
 struct Settings: Codable {
+    /// Missing in older settings files; nil follows the system language.
+    var language: InterfaceLanguage? = nil
     /// Modifier held down during a session. ⌘ is the default because it sits
     /// where Alt sits on a PC keyboard — directly left of the space bar — which is
     /// what Windows muscle memory reaches for.

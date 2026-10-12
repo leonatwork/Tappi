@@ -241,6 +241,10 @@ Danach Tappi neu starten und die Freigaben einmal erteilen.
 Vorschaubilder, minimierte Fenster, Fenster anderer Spaces, Fenster ausgeblendeter Apps,
 Auswahl-per-Maus und Autostart. Dazu *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
 
+Das Untermenü *Sprache* bietet *Systemstandard*, *English* und *Deutsch*. Standardmäßig
+folgt Tappi den bevorzugten macOS-Sprachen und verwendet Englisch als Fallback. Änderungen
+werden beim nächsten Öffnen des Menüs sichtbar und bleiben nach einem Neustart erhalten.
+
 Die Statuszeile ganz oben im Menü sagt, woran es hakt: fehlende Bedienungshilfen, keine
 erkannten Fenster oder „ohne Vorschauen".
 

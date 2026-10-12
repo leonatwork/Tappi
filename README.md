@@ -237,6 +237,10 @@ From the menu bar icon: modifier, show delay, tile size (112–320 pt), previews
 windows, windows on other Spaces, windows of hidden apps, mouse selection and launch at
 login. Plus *Open diagnostics log* and *Restart Tappi*.
 
+The *Language* submenu offers *System default*, *English*, and *Deutsch*. By default,
+Tappi follows your macOS preferred languages, falling back to English. Changes apply
+when you next open the menu and are saved across restarts.
+
 The status line at the top of the menu tells you what is wrong: missing Accessibility, no
 windows detected, or "without previews".
 
