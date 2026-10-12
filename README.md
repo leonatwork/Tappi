@@ -313,6 +313,18 @@ Per-version changes are in **[CHANGELOG.md](CHANGELOG.md)**.
 For bug reports please attach the diagnostics log (menu bar icon ▸ *Open diagnostics log*).
 It contains no window titles or other content.
 
+## Open source & premium
+
+Tappi is and stays open source under the MIT License. Everything in this repository
+remains free to use, modify and share.
+
+Two ways to support the project are planned:
+
+- **Sponsoring**: voluntary support for ongoing development. The link follows here as soon
+  as it is set up.
+- **Premium add-ons**: optional extra features, offered as a separate paid package. They
+  build on the free core and never take features away from it.
+
 ## License
 
 [MIT](LICENSE) — free to use, modify and redistribute, without warranty.

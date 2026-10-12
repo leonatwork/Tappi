@@ -112,6 +112,12 @@ Please attach the diagnostics log (menu bar icon ▸ *Open diagnostics log*, or
 whether you are on Apple Silicon or Intel. The log contains no window titles or other
 content — only startup state and permissions.
 
+## License of contributions
+
+Contributions are accepted under the MIT License, the same license as the project.
+Optional premium add-ons are developed separately. Community contributions are only
+included there with the contributor's explicit consent.
+
 ## Language
 
 Documentation is written in English. A German translation of the README lives in
