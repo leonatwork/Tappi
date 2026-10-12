@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import UniformTypeIdentifiers
 
 /// Menu bar entry — Tappi has no windows of its own, so this is the whole UI.
 final class StatusItemController: NSObject, NSMenuDelegate {
@@ -53,6 +54,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         // Opening a menu is a fine moment to re-read a permission that may have
         // been granted in System Settings since we last looked.
         ThumbnailProvider.shared.refreshPermission()
+        // Hand edits to settings.json take effect without a restart.
+        SettingsStore.shared.reloadIfChangedOnDisk()
         menu.removeAllItems()
         let modifier = settings.holdModifier.symbol
 
@@ -124,6 +127,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let sizeItem = NSMenuItem(title: text("Tile size", "Kachelgröße"), action: nil, keyEquivalent: "")
         sizeItem.submenu = sizeMenu
         menu.addItem(sizeItem)
+
+        let columnsMenu = NSMenu()
+        for value in [4, 5, 6, 7, 8, 10] {
+            let entry = action("\(value)", #selector(setMaxColumns(_:)))
+            entry.representedObject = value
+            entry.state = settings.maxColumns == value ? .on : .off
+            columnsMenu.addItem(entry)
+        }
+        let columnsItem = NSMenuItem(title: text("Tiles per row", "Kacheln pro Zeile"), action: nil, keyEquivalent: "")
+        columnsItem.submenu = columnsMenu
+        menu.addItem(columnsItem)
 
         menu.addItem(.separator())
         let replace = toggle(text("Replace system ⌘Tab", "System-⌘Tab ersetzen"), #selector(toggleReplaceSystemSwitcher),
@@ -220,6 +234,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         SettingsStore.shared.mutate { $0.tileSize = value }
     }
 
+    @objc private func setMaxColumns(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? Int else { return }
+        SettingsStore.shared.mutate { $0.maxColumns = value }
+    }
+
     @objc private func toggleThumbnails() {
         let enabling = !settings.thumbnails
         SettingsStore.shared.mutate { $0.thumbnails = enabling }
@@ -287,7 +306,31 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         if !FileManager.default.fileExists(atPath: Settings.url.path) {
             SettingsStore.shared.value.save()
         }
-        NSWorkspace.shared.open(Settings.url)
+        Self.openInTextEditor(Settings.url)
+    }
+
+    /// The default app for .json is often Xcode or a browser, neither of which suits a
+    /// quick edit. The file goes to the default plain-text editor instead, or TextEdit
+    /// if that default is Xcode. If nothing opens, Finder shows the file.
+    static func openInTextEditor(_ url: URL) {
+        let workspace = NSWorkspace.shared
+        let skipped: Set<String> = ["com.apple.dt.Xcode"]
+        let candidates = [
+            workspace.urlForApplication(toOpen: .plainText),
+            workspace.urlForApplication(withBundleIdentifier: "com.apple.TextEdit"),
+        ]
+        let editor = candidates.compactMap { $0 }.first { app in
+            guard let id = Bundle(url: app)?.bundleIdentifier else { return false }
+            return !skipped.contains(id)
+        }
+        guard let editor else {
+            workspace.activateFileViewerSelecting([url])
+            return
+        }
+        workspace.open([url], withApplicationAt: editor, configuration: NSWorkspace.OpenConfiguration()) { _, error in
+            guard error != nil else { return }
+            DispatchQueue.main.async { workspace.activateFileViewerSelecting([url]) }
+        }
     }
 
     @objc private func openDiagnostics() {

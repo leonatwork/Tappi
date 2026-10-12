@@ -233,9 +233,10 @@ Then restart Tappi and grant the permissions once.
 
 ## Settings
 
-From the menu bar icon: modifier, show delay, tile size (112–320 pt), previews, minimized
-windows, windows on other Spaces, windows of hidden apps, mouse selection and launch at
-login. Plus *Open diagnostics log* and *Restart Tappi*.
+From the menu bar icon: language, modifier, show delay, tile size (112–320 pt), tiles per
+row, previews, minimized windows, windows on other Spaces, windows of hidden apps, mouse
+selection and launch at login. Plus *Open settings file*, *Open diagnostics log* and
+*Restart Tappi*.
 
 The *Language* submenu offers *System default*, *English*, and *Deutsch*. By default,
 Tappi follows your macOS preferred languages, falling back to English. Changes apply
@@ -245,7 +246,10 @@ The status line at the top of the menu tells you what is wrong: missing Accessib
 windows detected, or "without previews".
 
 Everything lives as JSON in `~/Library/Application Support/Tappi/settings.json` and can be
-edited directly. `tileSize` accepts any value, not just the presets.
+edited directly. *Open settings file* opens it in your default text editor, never in Xcode.
+Changes take effect the next time you open the menu, no restart needed. A file that does
+not parse is ignored and the current settings stay. `tileSize` and `maxColumns` accept any
+value, not just the presets.
 
 The **show delay** defaults to 0 ms (Windows parity). Set it to 60–120 ms if you would
 rather not see the panel at all during fast back-and-forth toggling — it then only appears

@@ -80,10 +80,18 @@ struct Settings: Codable {
     static let url: URL = directory.appendingPathComponent("settings.json")
 
     static func load() -> Settings {
-        guard let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode(Settings.self, from: data)
-        else { return Settings() }
-        return decoded
+        (try? loadFromDisk()) ?? Settings()
+    }
+
+    /// Throws instead of falling back to defaults, so a typo in a hand-edited file
+    /// does not silently reset every setting.
+    static func loadFromDisk() throws -> Settings {
+        try JSONDecoder().decode(Settings.self, from: Data(contentsOf: url))
+    }
+
+    /// Modification date of the file on disk, nil if it does not exist yet.
+    static var fileModificationDate: Date? {
+        (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
     }
 
     func save() {
@@ -99,11 +107,37 @@ final class SettingsStore {
     private(set) var value: Settings
     static let changed = Notification.Name("TappiSettingsChanged")
 
-    private init() { value = Settings.load() }
+    /// Modification date of the file as last read or written by Tappi.
+    private var knownModificationDate: Date?
+
+    private init() {
+        value = Settings.load()
+        knownModificationDate = Settings.fileModificationDate
+    }
 
     func mutate(_ body: (inout Settings) -> Void) {
+        // Pick up hand edits first, otherwise saving would overwrite them.
+        reloadIfChangedOnDisk()
         body(&value)
         value.save()
+        knownModificationDate = Settings.fileModificationDate
+        applyChange()
+    }
+
+    /// Re-reads settings.json if it was edited outside Tappi since the last read.
+    /// A file that does not parse is ignored and logged; the current values stay.
+    func reloadIfChangedOnDisk() {
+        guard let date = Settings.fileModificationDate, date != knownModificationDate else { return }
+        knownModificationDate = date
+        do {
+            value = try Settings.loadFromDisk()
+            applyChange()
+        } catch {
+            NSLog("Tappi: settings.json could not be read, keeping current settings: \(error)")
+        }
+    }
+
+    private func applyChange() {
         SystemSwitcher.apply()
         NotificationCenter.default.post(name: SettingsStore.changed, object: nil)
     }
