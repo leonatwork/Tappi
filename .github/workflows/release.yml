@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # Manual run: builds and signs without publishing, the zip is kept as an artifact.
+  workflow_dispatch:
 
 jobs:
   release:
@@ -11,25 +13,76 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Import signing certificate
+        id: signing
+        env:
+          P12: ${{ secrets.MACOS_SIGNING_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_SIGNING_PASSWORD }}
+        run: |
+          # Without the secrets the build falls back to ad-hoc signing, as before.
+          if [ -z "$P12" ]; then
+            echo "::warning::MACOS_SIGNING_P12 is not set, building ad-hoc signed."
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          printf '%s' "$P12" | base64 --decode > "$RUNNER_TEMP/codesign.p12"
+          security import "$RUNNER_TEMP/codesign.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/codesign.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          echo "CODESIGN_IDENTITY=leonatwork Code Signing" >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
 
       - name: Build
         env:
-          VERSION: ${{ github.ref_name }}
+          # Tag builds use the tag; manual builds fall back to the newest tag in build.sh.
+          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: ./build.sh
+
+      - name: Verify signature
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          codesign --verify --strict "dist/Tappi.app"
+          # A stable identity shows up as "certificate leaf" in the designated requirement.
+          codesign -d -r- "dist/Tappi.app" 2>&1 | grep "certificate leaf"
+
 
       - name: Package
         env:
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'manual' }}
         run: |
           # ditto rather than zip: it preserves the code signature and resource forks.
           ditto -c -k --keepParent dist/Tappi.app "Tappi-${VERSION}.zip"
           shasum -a 256 "Tappi-${VERSION}.zip" | tee checksum.txt
 
+      - name: Keep manual build
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tappi-manual
+          path: Tappi-manual.zip
+
       - name: Publish release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ github.ref_name }}
+          SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
+          if [ "$SIGNED" = "true" ]; then
+            SIGNING_NOTE="> **Note:** this build is signed with a stable certificate. Permissions granted once
+          > survive later updates that are signed the same way."
+          else
+            SIGNING_NOTE="> **Note:** this build is ad-hoc signed. macOS ties granted permissions to the
+          > signature, so they have to be granted again after an update."
+          fi
           NOTES=$(cat <<'EOF'
           ## Installation
 
@@ -46,15 +99,13 @@ jobs:
           Tappi then asks for **Accessibility** (required) and **Screen Recording**
           (optional, only for the window previews).
 
-          > **Note:** this build is ad-hoc signed. macOS ties granted permissions to the
-          > signature, so they have to be granted again after an update. To avoid that,
-          > build it yourself — `./setup-signing.sh` creates a stable local identity, after
-          > which permissions survive every update. See the README.
+          __SIGNING_NOTE__
 
           Full changes: [CHANGELOG.md](https://github.com/leonatwork/Tappi/blob/master/CHANGELOG.md)
           EOF
           )
           NOTES="${NOTES//__VERSION__/$VERSION}"
+          NOTES="${NOTES//__SIGNING_NOTE__/$SIGNING_NOTE}"
           printf '%s\n\n**SHA-256**\n```\n%s\n```\n' "$NOTES" "$(cat checksum.txt)" > notes.md
           gh release create "$VERSION" "Tappi-${VERSION}.zip" \
             --title "Tappi $VERSION" --notes-file notes.md
