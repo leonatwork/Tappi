@@ -137,3 +137,19 @@ swift scripts/check-localizations.swift
 It lints every file and reports missing or extra keys, mismatched placeholders, and keys
 that the code uses but English does not define. Corrections from native speakers are very
 welcome.
+
+## Screenshots
+
+The README images in `docs/screenshots/` are rendered, not captured. After a change to the
+switcher's look or to the icon, regenerate them:
+
+```bash
+scripts/screenshots/render.sh
+```
+
+It compiles the app's sources (without `main.swift`) together with a small harness, draws the
+switcher offscreen at 2× with invented demo windows and placeholder previews, and writes
+`switcher.png` (English), `switcher.de.png` (German) and `icon.png`. It never captures the
+screen or lists real windows, and it redirects the settings folder into a temporary
+directory, so your own `~/Library/Application Support/Tappi` is neither read nor written.
+The harness lives only in `scripts/screenshots/` and is not part of the app.

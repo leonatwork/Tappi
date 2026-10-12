@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/screenshots/icon.png" alt="Tappi app icon" width="128" />
+</p>
+
 # Tappi
 
 [![Build](https://github.com/leonatwork/Tappi/actions/workflows/build.yml/badge.svg)](https://github.com/leonatwork/Tappi/actions/workflows/build.yml)
@@ -34,9 +38,10 @@ they make macOS feel like home.
 ## Screenshot
 
 <div align="center">
-  <img src="docs/screenshots/switcher.png" alt="Tappi window switcher" width="820" />
+  <img src="docs/screenshots/switcher.png" alt="Tappi switcher showing six windows with previews, the second one selected" width="600" />
   <br />
-  <em>The switcher, showing every open window in most-recently-used order</em>
+  <em>The switcher after one press of ⌘Tab: every open window in most-recently-used order,
+  with live previews — minimized windows show their app icon</em>
 </div>
 
 ## Why
