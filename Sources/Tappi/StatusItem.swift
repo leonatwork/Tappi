@@ -2,6 +2,26 @@ import AppKit
 import ServiceManagement
 import UniformTypeIdentifiers
 
+/// The other tools of the "I love macOS, but I miss some Windows features" package.
+struct SiblingApp {
+    let name: String
+    /// Key of the one-line description in Localizable.strings.
+    let descriptionKey: String
+    let url: URL
+
+    static let all = [
+        SiblingApp(name: "Klemmi", descriptionKey: "moreApps.klemmi",
+                   url: URL(string: "https://github.com/leonatwork/Klemmi")!),
+        SiblingApp(name: "Snapline", descriptionKey: "moreApps.snapline",
+                   url: URL(string: "https://github.com/leonatwork/snapline")!),
+        SiblingApp(name: "Snapboard", descriptionKey: "moreApps.snapboard",
+                   url: URL(string: "https://github.com/leonatwork/snapboard")!),
+    ]
+
+    static let packageURL = URL(string:
+        "https://github.com/search?q=topic%3Ai-love-macos-but-i-miss-windows-features+user%3Aleonatwork&type=repositories")!
+}
+
 /// Menu bar entry — Tappi has no windows of its own, so this is the whole UI.
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -62,37 +82,31 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let running = SwitcherController.shared.isRunning && AX.isTrusted
         let status: String
         if !running {
-            status = text("Inactive · Accessibility permission missing", "Inaktiv · Bedienungshilfen fehlen")
+            status = tr("status.inactive")
         } else if !WindowStore.shared.isOperational {
-            status = text("No windows detected · Check permissions", "Keine Fenster erkannt · Freigabe prüfen")
+            status = tr("status.noWindows")
         } else {
             let previews = ThumbnailProvider.shared
-            let suffix = (settings.thumbnails && !previews.isGranted) ? text(" · without previews", " · ohne Vorschauen") : ""
-            status = text("Active · \(modifier)Tab · \(WindowStore.shared.entries.count) windows\(suffix)", "Aktiv · \(modifier)Tab · \(WindowStore.shared.entries.count) Fenster\(suffix)")
+            let suffix = (settings.thumbnails && !previews.isGranted) ? tr("status.withoutPreviews") : ""
+            let count = WindowStore.shared.entries.count
+            status = tr(count == 1 ? "status.active.one" : "status.active.other", modifier, count, suffix)
         }
         menu.addItem(disabled(status))
 
         if !running || !WindowStore.shared.isOperational {
-            menu.addItem(action(text("Grant Accessibility…", "Bedienungshilfen freigeben …"), #selector(openAccessibility)))
+            menu.addItem(action(tr("menu.grantAccessibility"), #selector(openAccessibility)))
         }
         menu.addItem(.separator())
 
         let languageMenu = NSMenu()
         for language in InterfaceLanguage.allCases {
-            let title: String
-            switch language {
-            case .system: title = text("System default", "Systemstandard")
-            case .english: title = "English"
-            case .german: title = "Deutsch"
-            }
-            let entry = action(title, #selector(setLanguage(_:)))
+            let entry = action(language.nativeName ?? tr("language.system"), #selector(setLanguage(_:)))
             entry.representedObject = language.rawValue
             entry.state = (settings.language ?? .system) == language ? .on : .off
             languageMenu.addItem(entry)
+            if language == .system { languageMenu.addItem(.separator()) }
         }
-        let languageItem = NSMenuItem(title: text("Language", "Sprache"), action: nil, keyEquivalent: "")
-        languageItem.submenu = languageMenu
-        menu.addItem(languageItem)
+        menu.addItem(submenu(tr("menu.language"), languageMenu))
 
         let modifierMenu = NSMenu()
         for candidate in [HoldModifier.option, .command, .control] {
@@ -101,21 +115,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             entry.state = settings.holdModifier == candidate ? .on : .off
             modifierMenu.addItem(entry)
         }
-        let modifierItem = NSMenuItem(title: "Modifier", action: nil, keyEquivalent: "")
-        modifierItem.submenu = modifierMenu
-        menu.addItem(modifierItem)
+        menu.addItem(submenu(tr("menu.modifier"), modifierMenu))
 
         let delayMenu = NSMenu()
         for value in [0, 60, 120, 200] {
-            let title = value == 0 ? text("Instant (like Windows)", "Sofort (wie Windows)") : "\(value) ms"
+            let title = value == 0 ? tr("delay.instant") : "\(value) ms"
             let entry = action(title, #selector(setDelay(_:)))
             entry.representedObject = value
             entry.state = settings.showDelayMs == value ? .on : .off
             delayMenu.addItem(entry)
         }
-        let delayItem = NSMenuItem(title: text("Show delay", "Einblendeverzögerung"), action: nil, keyEquivalent: "")
-        delayItem.submenu = delayMenu
-        menu.addItem(delayItem)
+        menu.addItem(submenu(tr("menu.showDelay"), delayMenu))
 
         let sizeMenu = NSMenu()
         for value in [112.0, 148.0, 190.0, 240.0, 320.0] {
@@ -124,9 +134,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             entry.state = settings.tileSize == value ? .on : .off
             sizeMenu.addItem(entry)
         }
-        let sizeItem = NSMenuItem(title: text("Tile size", "Kachelgröße"), action: nil, keyEquivalent: "")
-        sizeItem.submenu = sizeMenu
-        menu.addItem(sizeItem)
+        menu.addItem(submenu(tr("menu.tileSize"), sizeMenu))
 
         let columnsMenu = NSMenu()
         for value in [4, 5, 6, 7, 8, 10] {
@@ -135,55 +143,71 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             entry.state = settings.maxColumns == value ? .on : .off
             columnsMenu.addItem(entry)
         }
-        let columnsItem = NSMenuItem(title: text("Tiles per row", "Kacheln pro Zeile"), action: nil, keyEquivalent: "")
-        columnsItem.submenu = columnsMenu
-        menu.addItem(columnsItem)
+        menu.addItem(submenu(tr("menu.tilesPerRow"), columnsMenu))
 
         menu.addItem(.separator())
-        let replace = toggle(text("Replace system ⌘Tab", "System-⌘Tab ersetzen"), #selector(toggleReplaceSystemSwitcher),
+        let replace = toggle(tr("menu.replaceSystemSwitcher"), #selector(toggleReplaceSystemSwitcher),
                              settings.replaceSystemSwitcher)
         if settings.holdModifier != .command {
             replace.isEnabled = false
-            replace.toolTip = text("Only applies when the modifier is ⌘.", "Nur relevant, wenn der Modifier ⌘ ist.")
+            replace.toolTip = tr("tooltip.replaceSystemSwitcher")
         }
         menu.addItem(replace)
         if !SystemSwitcher.systemShortcutsEnabled && !SystemSwitcher.isSuppressed {
-            menu.addItem(action(text("Restore system ⌘Tab", "System-⌘Tab wiederherstellen"), #selector(restoreSystemSwitcher)))
+            menu.addItem(action(tr("menu.restoreSystemSwitcher"), #selector(restoreSystemSwitcher)))
         }
         let previews = ThumbnailProvider.shared
-        menu.addItem(toggle(text("Window previews", "Vorschaubilder"), #selector(toggleThumbnails), settings.thumbnails))
+        menu.addItem(toggle(tr("menu.windowPreviews"), #selector(toggleThumbnails), settings.thumbnails))
         if settings.thumbnails && !previews.isGranted {
-            let grant = action(text("Grant Screen Recording…", "Bildschirmaufnahme freigeben …"), #selector(grantScreenRecording))
-            grant.toolTip = text("Without this permission, Tappi shows app icons instead of window previews.", "Ohne diese Freigabe zeigt Tappi App-Symbole statt Fenstervorschauen.")
+            let grant = action(tr("menu.grantScreenRecording"), #selector(grantScreenRecording))
+            grant.toolTip = tr("tooltip.grantScreenRecording")
             menu.addItem(indented(grant))
         } else if previews.needsRestart {
-            menu.addItem(indented(action(text("Restart to enable previews", "Neu starten, um Vorschauen zu aktivieren"),
-                                         #selector(restartTappi))))
+            menu.addItem(indented(action(tr("menu.restartForPreviews"), #selector(restartTappi))))
         }
-        menu.addItem(toggle(text("Minimized windows", "Minimierte Fenster"), #selector(toggleMinimized), settings.includeMinimized))
-        menu.addItem(toggle(text("Windows on other Spaces", "Fenster anderer Spaces"), #selector(toggleSpaces), settings.includeOtherSpaces))
-        menu.addItem(toggle(text("Windows of hidden apps", "Fenster ausgeblendeter Apps"), #selector(toggleHidden), settings.includeHiddenApps))
-        menu.addItem(toggle(text("Selection follows the mouse", "Auswahl folgt der Maus"), #selector(toggleHover), settings.mouseHover))
+        menu.addItem(toggle(tr("menu.minimizedWindows"), #selector(toggleMinimized), settings.includeMinimized))
+        menu.addItem(toggle(tr("menu.otherSpaces"), #selector(toggleSpaces), settings.includeOtherSpaces))
+        menu.addItem(toggle(tr("menu.hiddenApps"), #selector(toggleHidden), settings.includeHiddenApps))
+        menu.addItem(toggle(tr("menu.mouseHover"), #selector(toggleHover), settings.mouseHover))
 
         menu.addItem(.separator())
-        menu.addItem(toggle(text("Launch at login", "Bei der Anmeldung starten"), #selector(toggleLaunchAtLogin), settings.launchAtLogin))
-        menu.addItem(action(text("Open settings file", "Einstellungsdatei öffnen"), #selector(openSettingsFile)))
-        menu.addItem(action(text("Open diagnostics log", "Diagnoseprotokoll öffnen"), #selector(openDiagnostics)))
-        menu.addItem(action(text("Restart Tappi", "Tappi neu starten"), #selector(restartTappi)))
+        menu.addItem(toggle(tr("menu.launchAtLogin"), #selector(toggleLaunchAtLogin), settings.launchAtLogin))
+        menu.addItem(action(tr("menu.openSettingsFile"), #selector(openSettingsFile)))
+        menu.addItem(action(tr("menu.openDiagnostics"), #selector(openDiagnostics)))
+        menu.addItem(action(tr("menu.restart"), #selector(restartTappi)))
         menu.addItem(.separator())
-        menu.addItem(action(text("Quit Tappi", "Tappi beenden"), #selector(quit)))
+        menu.addItem(submenu(tr("menu.moreApps"), moreAppsMenu()))
+        menu.addItem(.separator())
+        menu.addItem(action(tr("menu.quit"), #selector(quit)))
     }
 
-    private func text(_ english: String, _ german: String) -> String {
-        (settings.language ?? .system).text(english, german)
+    /// The sibling tools from the same package, each opening its GitHub page.
+    private func moreAppsMenu() -> NSMenu {
+        let menu = NSMenu()
+        for app in SiblingApp.all {
+            let entry = action("\(app.name) – \(tr(app.descriptionKey))", #selector(openLink(_:)))
+            entry.representedObject = app.url
+            menu.addItem(entry)
+        }
+        menu.addItem(.separator())
+        let package = action(tr("moreApps.package"), #selector(openLink(_:)))
+        package.representedObject = SiblingApp.packageURL
+        menu.addItem(package)
+        return menu
     }
 
     private func label(for modifier: HoldModifier) -> String {
         switch modifier {
-        case .option: return text("Option (Alt)", "Wahltaste (Alt)")
-        case .command: return text("Command", "Befehlstaste")
-        case .control: return "Control"
+        case .option: return tr("modifier.option")
+        case .command: return tr("modifier.command")
+        case .control: return tr("modifier.control")
         }
+    }
+
+    private func submenu(_ title: String, _ submenu: NSMenu) -> NSMenuItem {
+        let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        entry.submenu = submenu
+        return entry
     }
 
     private func disabled(_ title: String) -> NSMenuItem {
@@ -216,6 +240,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard let raw = sender.representedObject as? String,
               let language = InterfaceLanguage(rawValue: raw) else { return }
         SettingsStore.shared.mutate { $0.language = language }
+    }
+
+    @objc private func openLink(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        NSWorkspace.shared.open(url)
     }
 
     @objc private func setModifier(_ sender: NSMenuItem) {

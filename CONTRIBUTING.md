@@ -122,3 +122,18 @@ included there with the contributor's explicit consent.
 
 Documentation is written in English. A German translation of the README lives in
 [README.de.md](README.de.md); the English version is authoritative and updated first.
+
+### Translations
+
+Every user-facing string lives in `Resources/<language>.lproj/Localizable.strings` and is
+looked up with `tr("key")`. A new key goes into **all ten** files; use Apple's own terms for
+system features (System Settings, Accessibility, Screen Recording …) in each language.
+Then check:
+
+```bash
+swift scripts/check-localizations.swift
+```
+
+It lints every file and reports missing or extra keys, mismatched placeholders, and keys
+that the code uses but English does not define. Corrections from native speakers are very
+welcome.

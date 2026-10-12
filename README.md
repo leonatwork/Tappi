@@ -4,6 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/leonatwork/Tappi?sort=semver)](https://github.com/leonatwork/Tappi/releases/latest)
 ![Platform](https://img.shields.io/badge/macOS-14%2B-lightgrey)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Package: I love macOS, but I miss some Windows features](https://img.shields.io/badge/Package-I_love_macOS%2C_but_I_miss_some_Windows_features-0A84FF)](https://github.com/search?q=topic%3Ai-love-macos-but-i-miss-windows-features+user%3Aleonatwork&type=repositories)
 
 A window switcher for macOS that feels like Alt-Tab on Windows — and appears
 **instantly**. No waiting, no stutter, no CPU spike when you press the key.
@@ -14,6 +15,21 @@ system switcher.
 *🇩🇪 [Deutsche Version](README.de.md)*
 
 ---
+
+## Part of the package
+
+Tappi is one of four tools in the package
+**[I love macOS, but I miss some Windows features](https://github.com/search?q=topic%3Ai-love-macos-but-i-miss-windows-features+user%3Aleonatwork&type=repositories)**:
+
+| Tool | What it brings to macOS | Download |
+|---|---|---|
+| **Tappi** (this tool) | Alt+Tab between windows, not apps | [Latest release](https://github.com/leonatwork/Tappi/releases/latest) |
+| [Klemmi](https://github.com/leonatwork/Klemmi) | Clipboard history like Win+V, with the app each entry came from | [Latest release](https://github.com/leonatwork/Klemmi/releases/latest) |
+| [Snapline](https://github.com/leonatwork/snapline) | Windows 11 Snap Layouts, Aero Snap and Snap Assist | [Latest release](https://github.com/leonatwork/snapline/releases/latest) |
+| [Snapboard](https://github.com/leonatwork/snapboard) | Snipping-Tool-style screenshots straight to the clipboard | [Latest release](https://github.com/leonatwork/snapboard/releases/latest) |
+
+Miss more than one of these on your Mac? Grab all four — each works on its own, and together
+they make macOS feel like home.
 
 ## Screenshot
 
@@ -133,14 +149,6 @@ Idle cost: roughly 1 % CPU time and ~60 MB RSS.
 
 ## Installation
 
-### Homebrew
-
-```bash
-brew install --cask --no-quarantine leonatwork/tap/tappi
-```
-
-`--no-quarantine` is needed because the builds are signed but not notarised.
-
 ### Download the app
 
 Latest release: **[Download Tappi.app](https://github.com/leonatwork/Tappi/releases/latest)**
@@ -238,9 +246,15 @@ row, previews, minimized windows, windows on other Spaces, windows of hidden app
 selection and launch at login. Plus *Open settings file*, *Open diagnostics log* and
 *Restart Tappi*.
 
-The *Language* submenu offers *System default*, *English*, and *Deutsch*. By default,
-Tappi follows your macOS preferred languages, falling back to English. Changes apply
-when you next open the menu and are saved across restarts.
+The interface is available in English, German, French, Spanish, Italian, Portuguese
+(Brazil), Dutch, Japanese, Simplified Chinese and Korean. The *Language* submenu offers
+*System default* plus each of these, listed under its own name: *English*, *Deutsch*,
+*Français*, *Español*, *Italiano*, *Português (Brasil)*, *Nederlands*, *日本語*, *简体中文*
+and *한국어*. *System default* follows your macOS preferred languages and falls back to
+English. Changes apply when you next open the menu and are saved across restarts.
+
+The menu also has *More apps you might like*, linking to the other tools of the
+[package](#part-of-the-package).
 
 The status line at the top of the menu tells you what is wrong: missing Accessibility, no
 windows detected, or "without previews".
@@ -307,6 +321,9 @@ the log file.
 | `AX.swift` | Accessibility calls with timeout protection |
 | `Diagnostics.swift` | Startup log for a program with no console |
 | `StatusItem.swift` | Menu bar menu |
+| `InterfaceLanguage.swift` | Interface language and string lookup |
+| `Resources/*.lproj` | Translations, one `Localizable.strings` per language |
+| `scripts/generate-icon.swift` | Draws the app icon; `build.sh` runs it |
 
 ## Contributing
 

@@ -81,9 +81,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             // The one failure macOS gives no useful error for: the process is
             // "trusted" but not actually ticked in the Accessibility list.
-            report("Accessibility reports as granted, but the event tap was refused — "
-                   + "remove Tappi from System Settings ▸ Privacy & Security ▸ Accessibility "
-                   + "and add it again (a rebuild invalidates the old entry)")
+            // Localized, unlike the purely technical lines: this one tells the
+            // user what to do in System Settings.
+            report(tr("diagnostics.eventTapRefused"))
         }
     }
 
@@ -97,8 +97,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     ? "screen recording granted — restart Tappi to enable previews"
                     : "screen recording granted")
             } else if SettingsStore.shared.value.thumbnails {
-                Diagnostics.log("screen recording denied — showing app icons instead of previews; "
-                                + "grant it via the menu bar icon ▸ 'Bildschirmaufnahme freigeben'")
+                // Names the menu item, so it has to match the menu's language.
+                Diagnostics.log(tr("diagnostics.screenRecordingDenied", tr("menu.grantScreenRecording")))
             }
         }
     }

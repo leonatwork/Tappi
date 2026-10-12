@@ -1,0 +1,118 @@
+/* Tappi — pt-BR. Keys must exist in every language: scripts/check-localizations.swift */
+
+/* Menu status line: Tappi cannot run because Accessibility is not granted. */
+"status.inactive" = "Inativo · Falta a permissão de Acessibilidade";
+
+/* Menu status line: running, but no windows could be read. */
+"status.noWindows" = "Nenhuma janela detectada · Verifique as permissões";
+
+/* Menu status line with exactly one window. %1$@ = modifier symbol (e.g. ⌘), %2$ld = window count, %3$@ = optional suffix (status.withoutPreviews). */
+"status.active.one" = "Ativo · %1$@Tab · %2$ld janela%3$@";
+
+/* Menu status line with any other number of windows. Same arguments as status.active.one. */
+"status.active.other" = "Ativo · %1$@Tab · %2$ld janelas%3$@";
+
+/* Appended to the status line when previews are on but Screen Recording is missing. Keep the leading space. */
+"status.withoutPreviews" = " · sem pré-visualizações";
+
+/* Menu item that opens the Accessibility list in System Settings. Use Apple's name for the pane. */
+"menu.grantAccessibility" = "Conceder permissão de Acessibilidade…";
+
+/* Submenu title for the interface language. */
+"menu.language" = "Idioma";
+
+/* Language submenu entry that follows the macOS preferred languages. */
+"language.system" = "Padrão do sistema";
+
+/* Submenu title: which modifier key is held down while switching. */
+"menu.modifier" = "Tecla modificadora";
+
+/* Name of the Option key, with its PC equivalent in parentheses. */
+"modifier.option" = "Option (Alt)";
+
+/* Name of the Command key. */
+"modifier.command" = "Command";
+
+/* Name of the Control key. */
+"modifier.control" = "Control";
+
+/* Submenu title: how long to wait before the switcher panel is drawn. */
+"menu.showDelay" = "Atraso de exibição";
+
+/* Show delay of 0 ms. */
+"delay.instant" = "Imediato (como no Windows)";
+
+/* Submenu title: size of one window tile in the switcher. */
+"menu.tileSize" = "Tamanho dos blocos";
+
+/* Submenu title: maximum number of tiles per row. */
+"menu.tilesPerRow" = "Blocos por linha";
+
+/* Toggle: disable the macOS app switcher while Tappi owns ⌘Tab. */
+"menu.replaceSystemSwitcher" = "Substituir o ⌘Tab do sistema";
+
+/* Tooltip on the disabled toggle above. */
+"tooltip.replaceSystemSwitcher" = "Só se aplica quando a tecla modificadora é ⌘.";
+
+/* Menu item that hands ⌘Tab back to macOS. */
+"menu.restoreSystemSwitcher" = "Restaurar o ⌘Tab do sistema";
+
+/* Toggle: live window thumbnails in the switcher. */
+"menu.windowPreviews" = "Pré-visualizações das janelas";
+
+/* Menu item that requests Screen Recording. Use Apple's name for the pane. Also quoted in a diagnostics message. */
+"menu.grantScreenRecording" = "Conceder permissão de Gravação de Tela…";
+
+/* Tooltip on the item above. */
+"tooltip.grantScreenRecording" = "Sem esta permissão, o Tappi mostra os ícones dos apps em vez das pré-visualizações das janelas.";
+
+/* Menu item: Screen Recording only takes effect after a restart. */
+"menu.restartForPreviews" = "Reiniciar para ativar as pré-visualizações";
+
+/* Toggle: list minimized windows. */
+"menu.minimizedWindows" = "Janelas minimizadas";
+
+/* Toggle: list windows on other Spaces (Mission Control desktops). Use Apple's term for Spaces. */
+"menu.otherSpaces" = "Janelas de outros Spaces";
+
+/* Toggle: list windows of apps hidden with ⌘H. */
+"menu.hiddenApps" = "Janelas de apps ocultos";
+
+/* Toggle: hovering a tile selects it. */
+"menu.mouseHover" = "A seleção segue o mouse";
+
+/* Toggle: start Tappi at login. */
+"menu.launchAtLogin" = "Abrir ao iniciar sessão";
+
+/* Menu item that opens settings.json in a text editor. */
+"menu.openSettingsFile" = "Abrir o arquivo de ajustes";
+
+/* Menu item that opens diagnostics.log. */
+"menu.openDiagnostics" = "Abrir o registro de diagnóstico";
+
+/* Menu item. */
+"menu.restart" = "Reiniciar o Tappi";
+
+/* Menu item. */
+"menu.quit" = "Encerrar o Tappi";
+
+/* Submenu title listing the other tools of the same package. */
+"menu.moreApps" = "Outros apps de que você pode gostar";
+
+/* Short description after “Klemmi – ” in the More apps submenu. */
+"moreApps.klemmi" = "Histórico da área de transferência como Win+V";
+
+/* Short description after “Snapline – ” in the More apps submenu. Snap Layouts, Aero Snap and Snap Assist are Windows feature names. */
+"moreApps.snapline" = "Snap Layouts, Aero Snap e Snap Assist";
+
+/* Short description after “Snapboard – ” in the More apps submenu. */
+"moreApps.snapboard" = "Capturas de tela no estilo Snipping Tool, direto para a área de transferência";
+
+/* Last entry of the More apps submenu: opens the list of all tools in the package. */
+"moreApps.package" = "O pacote completo…";
+
+/* Diagnostics log line. Use Apple's names for System Settings, Privacy & Security and Accessibility. */
+"diagnostics.eventTapRefused" = "A Acessibilidade aparece como concedida, mas a captura do teclado foi recusada — remova o Tappi em Ajustes do Sistema ▸ Privacidade e Segurança ▸ Acessibilidade e adicione-o novamente (uma nova compilação invalida a entrada antiga)";
+
+/* Diagnostics log line. %@ = the menu item menu.grantScreenRecording. */
+"diagnostics.screenRecordingDenied" = "Gravação de Tela negada — exibindo ícones dos apps em vez das pré-visualizações; conceda pelo ícone da barra de menus ▸ “%@”";

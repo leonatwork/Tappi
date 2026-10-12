@@ -1,0 +1,118 @@
+/* Tappi — zh-Hans. Keys must exist in every language: scripts/check-localizations.swift */
+
+/* Menu status line: Tappi cannot run because Accessibility is not granted. */
+"status.inactive" = "未激活 · 缺少“辅助功能”权限";
+
+/* Menu status line: running, but no windows could be read. */
+"status.noWindows" = "未检测到窗口 · 请检查权限";
+
+/* Menu status line with exactly one window. %1$@ = modifier symbol (e.g. ⌘), %2$ld = window count, %3$@ = optional suffix (status.withoutPreviews). */
+"status.active.one" = "已激活 · %1$@Tab · %2$ld 个窗口%3$@";
+
+/* Menu status line with any other number of windows. Same arguments as status.active.one. */
+"status.active.other" = "已激活 · %1$@Tab · %2$ld 个窗口%3$@";
+
+/* Appended to the status line when previews are on but Screen Recording is missing. Keep the leading space. */
+"status.withoutPreviews" = " · 无预览";
+
+/* Menu item that opens the Accessibility list in System Settings. Use Apple's name for the pane. */
+"menu.grantAccessibility" = "授予“辅助功能”权限…";
+
+/* Submenu title for the interface language. */
+"menu.language" = "语言";
+
+/* Language submenu entry that follows the macOS preferred languages. */
+"language.system" = "系统默认";
+
+/* Submenu title: which modifier key is held down while switching. */
+"menu.modifier" = "修饰键";
+
+/* Name of the Option key, with its PC equivalent in parentheses. */
+"modifier.option" = "Option (Alt)";
+
+/* Name of the Command key. */
+"modifier.command" = "Command";
+
+/* Name of the Control key. */
+"modifier.control" = "Control";
+
+/* Submenu title: how long to wait before the switcher panel is drawn. */
+"menu.showDelay" = "显示延迟";
+
+/* Show delay of 0 ms. */
+"delay.instant" = "立即（与 Windows 相同）";
+
+/* Submenu title: size of one window tile in the switcher. */
+"menu.tileSize" = "图块大小";
+
+/* Submenu title: maximum number of tiles per row. */
+"menu.tilesPerRow" = "每行图块数";
+
+/* Toggle: disable the macOS app switcher while Tappi owns ⌘Tab. */
+"menu.replaceSystemSwitcher" = "替换系统 ⌘Tab";
+
+/* Tooltip on the disabled toggle above. */
+"tooltip.replaceSystemSwitcher" = "仅在修饰键为 ⌘ 时适用。";
+
+/* Menu item that hands ⌘Tab back to macOS. */
+"menu.restoreSystemSwitcher" = "恢复系统 ⌘Tab";
+
+/* Toggle: live window thumbnails in the switcher. */
+"menu.windowPreviews" = "窗口预览";
+
+/* Menu item that requests Screen Recording. Use Apple's name for the pane. Also quoted in a diagnostics message. */
+"menu.grantScreenRecording" = "授予“屏幕录制”权限…";
+
+/* Tooltip on the item above. */
+"tooltip.grantScreenRecording" = "没有此权限时，Tappi 会显示 App 图标而不是窗口预览。";
+
+/* Menu item: Screen Recording only takes effect after a restart. */
+"menu.restartForPreviews" = "重新启动以启用预览";
+
+/* Toggle: list minimized windows. */
+"menu.minimizedWindows" = "已最小化的窗口";
+
+/* Toggle: list windows on other Spaces (Mission Control desktops). Use Apple's term for Spaces. */
+"menu.otherSpaces" = "其他空间中的窗口";
+
+/* Toggle: list windows of apps hidden with ⌘H. */
+"menu.hiddenApps" = "已隐藏 App 的窗口";
+
+/* Toggle: hovering a tile selects it. */
+"menu.mouseHover" = "选择跟随鼠标";
+
+/* Toggle: start Tappi at login. */
+"menu.launchAtLogin" = "登录时启动";
+
+/* Menu item that opens settings.json in a text editor. */
+"menu.openSettingsFile" = "打开设置文件";
+
+/* Menu item that opens diagnostics.log. */
+"menu.openDiagnostics" = "打开诊断日志";
+
+/* Menu item. */
+"menu.restart" = "重新启动 Tappi";
+
+/* Menu item. */
+"menu.quit" = "退出 Tappi";
+
+/* Submenu title listing the other tools of the same package. */
+"menu.moreApps" = "你可能喜欢的其他 App";
+
+/* Short description after “Klemmi – ” in the More apps submenu. */
+"moreApps.klemmi" = "类似 Win+V 的剪贴板历史";
+
+/* Short description after “Snapline – ” in the More apps submenu. Snap Layouts, Aero Snap and Snap Assist are Windows feature names. */
+"moreApps.snapline" = "Snap Layouts、Aero Snap 和 Snap Assist";
+
+/* Short description after “Snapboard – ” in the More apps submenu. */
+"moreApps.snapboard" = "Snipping Tool 风格的截屏，直接存入剪贴板";
+
+/* Last entry of the More apps submenu: opens the list of all tools in the package. */
+"moreApps.package" = "完整套装…";
+
+/* Diagnostics log line. Use Apple's names for System Settings, Privacy & Security and Accessibility. */
+"diagnostics.eventTapRefused" = "“辅助功能”显示为已授权，但键盘事件监听被拒绝 — 请在“系统设置 ▸ 隐私与安全性 ▸ 辅助功能”中移除 Tappi 并重新添加（重新构建会使旧条目失效）";
+
+/* Diagnostics log line. %@ = the menu item menu.grantScreenRecording. */
+"diagnostics.screenRecordingDenied" = "“屏幕录制”被拒绝 — 将显示 App 图标而不是预览；请通过菜单栏图标 ▸“%@”授予权限";
