@@ -20,6 +20,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Release builds are signed with a stable certificate, so granted permissions survive
+  later updates. Updating from 1.1.0 needs one last re-grant.
 - Strings moved from code into `Resources/<language>.lproj/Localizable.strings`. Existing
   `settings.json` files keep their language: `"english"` and `"german"` are read as before,
   and a language code such as `"fr"` or an unknown value no longer breaks the file.

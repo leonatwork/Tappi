@@ -165,9 +165,10 @@ kostenpflichtiges Apple-Entwicklerkonto erforderlich. Alternativ:
 xattr -dr com.apple.quarantine /Applications/Tappi.app
 ```
 
-> Release-Builds sind ad-hoc signiert. macOS bindet erteilte Berechtigungen an die
-> Signatur, weshalb sie **nach jedem Update erneut erteilt werden müssen**. Wen das
-> stört, baut besser selbst — das dauert eine Minute und löst das Problem dauerhaft.
+> Release-Builds nach 1.1.0 sind mit einem festen Zertifikat signiert, „leonatwork Code
+> Signing“. Erteilte Berechtigungen **überstehen spätere Updates**. Wer von 1.1.0 oder
+> älter kommt, die noch ad-hoc signiert waren, erteilt sie einmal neu. Das Zertifikat ist
+> selbstsigniert und nicht von Apple, der Schritt beim ersten Start oben bleibt also nötig.
 
 ### Selbst bauen (empfohlen)
 
@@ -224,6 +225,9 @@ Das erzeugt ein selbstsigniertes Codesignatur-Zertifikat und legt es im Login-Sc
 ab. Ein Admin-Passwort ist nicht nötig: `codesign` akzeptiert eine nicht als vertrauenswürdig
 markierte selbstsignierte Identität zum lokalen Signieren. `build.sh` verwendet sie danach
 automatisch — die Berechtigungen überstehen jeden weiteren Neubau.
+
+Eigene Builds und Release-Builds nutzen verschiedene Zertifikate. Ein Wechsel zwischen
+beiden gilt für macOS deshalb als neue App, und die Berechtigungen müssen neu erteilt werden.
 
 Wer eine Developer-ID hat, nimmt stattdessen diese:
 
