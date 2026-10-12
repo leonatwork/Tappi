@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/screenshots/icon.png" alt="Tappi-App-Symbol" width="128" />
+</p>
+
 # Tappi
 
 [![Build](https://github.com/leonatwork/Tappi/actions/workflows/build.yml/badge.svg)](https://github.com/leonatwork/Tappi/actions/workflows/build.yml)
@@ -34,9 +38,10 @@ zusammen fühlt sich macOS wie zu Hause an.
 ## Screenshot
 
 <div align="center">
-  <img src="docs/screenshots/switcher.png" alt="Tappi window switcher" width="820" />
+  <img src="docs/screenshots/switcher.de.png" alt="Tappi-Switcher mit sechs Fenstern samt Vorschau, das zweite ist ausgewählt" width="600" />
   <br />
-  <em>Der Switcher zeigt alle offenen Fenster in zuletzt-benutzt-Reihenfolge</em>
+  <em>Der Switcher nach einmal ⌘Tab: alle offenen Fenster in zuletzt-benutzt-Reihenfolge,
+  mit Live-Vorschau — minimierte Fenster zeigen ihr App-Symbol</em>
 </div>
 
 ## Warum
