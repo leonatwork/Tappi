@@ -3,6 +3,27 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-10-12
+
+### Added
+
+- Interface language setting: *System default*, *English* or *Deutsch*. Contributed by
+  @CommanderTvis.
+- *Tiles per row* in the menu bar menu, so every setting is reachable without editing
+  `settings.json`.
+
+### Changed
+
+- *Open settings file* uses the default text editor instead of the app registered for
+  JSON, which is often Xcode or a browser. Falls back to TextEdit, then Finder.
+- Hand edits to `settings.json` take effect the next time the menu opens, without a restart.
+
+### Fixed
+
+- Changing a setting in the menu no longer overwrites edits made to `settings.json` by hand.
+- While Tappi is running, a `settings.json` that does not parse is ignored instead of
+  resetting every setting to its default.
+
 ## [1.0.0] — 2026-08-25
 
 First release.

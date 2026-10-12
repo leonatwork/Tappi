@@ -237,9 +237,10 @@ Danach Tappi neu starten und die Freigaben einmal erteilen.
 
 ## Einstellungen
 
-Über das Menüleisten-Symbol: Modifier, Einblendeverzögerung, Kachelgröße (112–320 pt),
-Vorschaubilder, minimierte Fenster, Fenster anderer Spaces, Fenster ausgeblendeter Apps,
-Auswahl-per-Maus und Autostart. Dazu *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
+Über das Menüleisten-Symbol: Sprache, Modifier, Einblendeverzögerung, Kachelgröße
+(112–320 pt), Kacheln pro Zeile, Vorschaubilder, minimierte Fenster, Fenster anderer
+Spaces, Fenster ausgeblendeter Apps, Auswahl-per-Maus und Autostart. Dazu
+*Einstellungsdatei öffnen*, *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
 
 Das Untermenü *Sprache* bietet *Systemstandard*, *English* und *Deutsch*. Standardmäßig
 folgt Tappi den bevorzugten macOS-Sprachen und verwendet Englisch als Fallback. Änderungen
@@ -249,7 +250,9 @@ Die Statuszeile ganz oben im Menü sagt, woran es hakt: fehlende Bedienungshilfe
 erkannten Fenster oder „ohne Vorschauen".
 
 Alles liegt als JSON in `~/Library/Application Support/Tappi/settings.json` und lässt sich
-auch direkt bearbeiten.
+auch direkt bearbeiten. *Einstellungsdatei öffnen* öffnet sie im Standard-Texteditor, nie in
+Xcode. Änderungen greifen beim nächsten Öffnen des Menüs, ohne Neustart. Eine Datei, die
+sich nicht lesen lässt, wird ignoriert, und die bisherigen Einstellungen bleiben.
 
 Die **Einblendeverzögerung** steht standardmäßig auf 0 ms (Windows-Verhalten). Wer beim
 schnellen Hin-und-Her-Wechseln gar kein Panel sehen will, stellt sie auf 60–120 ms — dann
