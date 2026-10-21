@@ -309,7 +309,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @objc private func restoreSystemSwitcher() {
-        SystemSwitcher.restore()
+        SystemSwitcher.restore(force: true)
+        SystemSwitcher.apply()
     }
 
     @objc private func toggleMinimized() { SettingsStore.shared.mutate { $0.includeMinimized.toggle() } }
