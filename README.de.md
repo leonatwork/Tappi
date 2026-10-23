@@ -275,8 +275,18 @@ erkannten Fenster oder „ohne Vorschauen".
 
 Alles liegt als JSON in `~/Library/Application Support/Tappi/settings.json` und lässt sich
 auch direkt bearbeiten. *Einstellungsdatei öffnen* öffnet sie im Standard-Texteditor, nie in
-Xcode. Änderungen greifen beim nächsten Öffnen des Menüs, ohne Neustart. Eine Datei, die
-sich nicht lesen lässt, wird ignoriert, und die bisherigen Einstellungen bleiben.
+Xcode. Änderungen greifen beim nächsten Öffnen des Menüs, ohne Neustart. Fehlende, mit
+`null` belegte oder ungültige Werte erhalten nur den Default ihres jeweiligen Felds;
+alle anderen Einstellungen bleiben erhalten, unbekannte Keys werden ignoriert. Eine
+unbekannte Sprache folgt der Systemsprache. Beim Laden wird die Datei nicht neu
+geschrieben, sondern erst bei der nächsten Einstellungsänderung im Menü.
+
+Eine unlesbare Datei oder ein ungültiges JSON-Dokument wird per `NSLog` protokolliert.
+Beim Start verwendet Tappi Defaults, beim erneuten Laden bleiben die aktuellen
+Einstellungen erhalten. Vor dem nächsten Speichern wird der ursprüngliche Inhalt als
+`settings.json.bak` im selben Ordner gesichert (eine bestehende Sicherung wird ersetzt).
+Schlägt die Sicherung fehl, wird die Originaldatei nicht überschrieben. `tileSize` und
+`maxColumns` akzeptieren beliebige numerische Werte, nicht nur die Vorgaben aus dem Menü.
 
 Die **Einblendeverzögerung** steht standardmäßig auf 0 ms (Windows-Verhalten). Wer beim
 schnellen Hin-und-Her-Wechseln gar kein Panel sehen will, stellt sie auf 60–120 ms — dann
