@@ -113,6 +113,14 @@ final class WindowStore {
         var isOnActiveSpace: Bool
     }
 
+    private struct WindowKey: Equatable {
+        let element: AXUIElement
+
+        static func == (lhs: WindowKey, rhs: WindowKey) -> Bool {
+            CFEqual(lhs.element, rhs.element)
+        }
+    }
+
     private func regularApps() -> [NSRunningApplication] {
         NSWorkspace.shared.runningApplications.filter {
             $0.activationPolicy == .regular && !$0.isTerminated
@@ -129,15 +137,17 @@ final class WindowStore {
         let frontPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
         queue.async { [weak self] in
             guard let self else { return }
-            let raw = self.enumerate(snapshots)
+            let snapshot = self.enumerate(snapshots)
             let focused = frontPid.flatMap { AX.element(AX.application($0), kAXFocusedWindowAttribute) }
-            DispatchQueue.main.async { self.merge(raw, focused: focused) }
+            DispatchQueue.main.async {
+                self.merge(snapshot.windows, unresponsivePIDs: snapshot.unresponsivePIDs, focused: focused)
+            }
         }
     }
 
     /// CoreGraphics knows the true z-order and which windows are on the current
     /// Space; Accessibility knows the titles. We join them on (pid, frame).
-    private func enumerate(_ apps: [AppSnapshot]) -> [RawWindow] {
+    private func enumerate(_ apps: [AppSnapshot]) -> (windows: [RawWindow], unresponsivePIDs: Set<pid_t>) {
         var onScreen: [pid_t: [(id: CGWindowID, rect: CGRect, z: Int)]] = [:]
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         if let list = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] {
@@ -153,10 +163,15 @@ final class WindowStore {
         }
 
         var result: [RawWindow] = []
+        var unresponsivePIDs: Set<pid_t> = []
         for app in apps {
             let axApp = AX.application(app.pid)
+            guard let windows = AX.windows(axApp) else {
+                unresponsivePIDs.insert(app.pid)
+                continue
+            }
             var candidates = onScreen[app.pid] ?? []
-            for window in AX.windows(axApp) {
+            for window in windows {
                 let minimized = AX.bool(window, kAXMinimizedAttribute) ?? false
                 guard AX.isSwitchable(window, minimized: minimized) else { continue }
                 let title = AX.string(window, kAXTitleAttribute) ?? ""
@@ -179,7 +194,7 @@ final class WindowStore {
                                         isOnActiveSpace: onActiveSpace))
             }
         }
-        return result
+        return (result, unresponsivePIDs)
     }
 
     private func close(_ a: CGRect, _ b: CGRect, tolerance: CGFloat = 2) -> Bool {
@@ -187,16 +202,32 @@ final class WindowStore {
             && abs(a.width - b.width) <= tolerance && abs(a.height - b.height) <= tolerance
     }
 
-    /// Fold the fresh snapshot into the existing MRU order: known windows keep
-    /// their rank, unknown ones are appended in z-order, gone ones drop out.
-    private func merge(_ raw: [RawWindow], focused: AXUIElement?) {
-        var remaining = raw
-        var merged: [WindowEntry] = []
-        merged.reserveCapacity(raw.count)
-
-        for entry in entries {
-            guard let index = remaining.firstIndex(where: { entry.matches($0.axWindow) }) else { continue }
-            let fresh = remaining.remove(at: index)
+    /// Apply the pure ordering result without replacing existing entries and
+    /// their cached thumbnails. A missing fresh value leaves all last values intact.
+    private func merge(_ raw: [RawWindow], unresponsivePIDs: Set<pid_t>, focused: AXUIElement?) {
+        // An app may terminate while the background AX queries are in flight.
+        let runningPIDs = Set(regularApps().map(\.processIdentifier))
+        typealias Item = WindowMergeItem<WindowKey, pid_t, RawWindow?>
+        let previousEntries = entries
+        let old = previousEntries.map {
+            Item(key: WindowKey(element: $0.axWindow), pid: $0.pid, zIndex: Int.max, value: nil)
+        }
+        let snapshot = raw.filter { runningPIDs.contains($0.app.pid) }.map {
+            Item(key: WindowKey(element: $0.axWindow), pid: $0.app.pid, zIndex: $0.zIndex, value: $0)
+        }
+        let merged = WindowMerge.merge(old: old, snapshot: snapshot,
+                                       unresponsivePIDs: unresponsivePIDs.intersection(runningPIDs),
+                                       seeded: seeded)
+        entries = merged.compactMap { item -> WindowEntry? in
+            let existing = previousEntries.first { $0.pid == item.pid && $0.matches(item.key.element) }
+            guard let fresh = item.value else { return existing }
+            guard let entry = existing else {
+                return WindowEntry(axWindow: fresh.axWindow, pid: fresh.app.pid, title: fresh.title,
+                                   appName: fresh.app.name, icon: fresh.app.icon,
+                                   isMinimized: fresh.isMinimized, isHidden: fresh.app.isHidden,
+                                   isOnActiveSpace: fresh.isOnActiveSpace, frame: fresh.frame,
+                                   cgWindowID: fresh.cgWindowID)
+            }
             entry.title = fresh.title
             entry.appName = fresh.app.name
             entry.icon = fresh.app.icon
@@ -208,28 +239,9 @@ final class WindowStore {
                 entry.cgWindowID = id
                 entry.thumbnail = nil
             }
-            merged.append(entry)
+            return entry
         }
-
-        // On a cold start there is no history yet, so seed from the real z-order.
-        let newcomers = remaining.sorted { $0.zIndex < $1.zIndex }.map { fresh in
-            WindowEntry(axWindow: fresh.axWindow, pid: fresh.app.pid, title: fresh.title,
-                        appName: fresh.app.name, icon: fresh.app.icon,
-                        isMinimized: fresh.isMinimized, isHidden: fresh.app.isHidden,
-                        isOnActiveSpace: fresh.isOnActiveSpace, frame: fresh.frame,
-                        cgWindowID: fresh.cgWindowID)
-        }
-
-        if seeded {
-            entries = merged + newcomers
-        } else {
-            entries = (merged + newcomers).sorted { lhs, rhs in
-                let l = raw.first { lhs.matches($0.axWindow) }?.zIndex ?? Int.max
-                let r = raw.first { rhs.matches($0.axWindow) }?.zIndex ?? Int.max
-                return l < r
-            }
-            seeded = !entries.isEmpty
-        }
+        if !seeded { seeded = !entries.isEmpty }
 
         // Keep index 0 in sync with what the user is actually looking at.
         if let focused, let entry = entries.first(where: { $0.matches(focused) }) {

@@ -49,12 +49,14 @@ enum AX {
         return (value as! AXUIElement)
     }
 
-    static func windows(_ app: AXUIElement) -> [AXUIElement] {
+    /// nil distinguishes a messaging timeout from a successful empty response.
+    /// Other errors keep the previous empty-list behavior.
+    static func windows(_ app: AXUIElement) -> [AXUIElement]? {
         var raw: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &raw) == .success,
-              let array = raw as? [AXUIElement]
-        else { return [] }
-        return array
+        let result = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &raw)
+        if result == .cannotComplete { return nil }
+        guard result == .success else { return [] }
+        return raw as? [AXUIElement] ?? []
     }
 
     static func frame(_ window: AXUIElement) -> CGRect? {
