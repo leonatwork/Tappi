@@ -39,7 +39,7 @@ enum SwitchScope: String, Codable {
     case currentApp
 }
 
-struct Settings: Codable {
+struct Settings: Codable, Equatable {
     /// Missing in older settings files; nil follows the system language.
     var language: InterfaceLanguage? = nil
     /// Modifier held down during a session. ⌘ is the default because it sits
@@ -80,11 +80,18 @@ struct Settings: Codable {
     static let url: URL = directory.appendingPathComponent("settings.json")
 
     static func load() -> Settings {
-        (try? loadFromDisk()) ?? Settings()
+        guard FileManager.default.fileExists(atPath: url.path) else { return Settings() }
+        do {
+            return try loadFromDisk()
+        } catch {
+            NSLog("Tappi: settings.json could not be read, using defaults until the next change: \(error)")
+            return Settings()
+        }
     }
 
-    /// Throws instead of falling back to defaults, so a typo in a hand-edited file
-    /// does not silently reset every setting.
+    /// Missing or invalid fields use only their own defaults; unknown keys are ignored.
+    /// Read errors and invalid JSON documents still throw, so callers can keep current
+    /// settings at runtime. Loading never rewrites the file; save() backs it up if unreadable.
     static func loadFromDisk() throws -> Settings {
         try JSONDecoder().decode(Settings.self, from: Data(contentsOf: url))
     }
@@ -94,10 +101,48 @@ struct Settings: Codable {
         (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
     }
 
-    func save() {
+    @discardableResult
+    func save() -> Bool {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try? encoder.encode(self).write(to: Settings.url, options: .atomic)
+        do {
+            // Check at the write boundary too: the file may have become unreadable
+            // at startup or after a reload, or save() may be called directly.
+            if FileManager.default.fileExists(atPath: Settings.url.path) {
+                do {
+                    _ = try Settings.loadFromDisk()
+                } catch {
+                    NSLog("Tappi: settings.json could not be read, backing it up before saving: \(error)")
+                    let original = try Data(contentsOf: Settings.url)
+                    try original.write(to: Settings.url.appendingPathExtension("bak"), options: .atomic)
+                }
+            }
+            try encoder.encode(self).write(to: Settings.url, options: .atomic)
+            return true
+        } catch {
+            // A failed backup must prevent overwriting the user's original file.
+            NSLog("Tappi: settings.json could not be backed up or saved, leaving the file unchanged: \(error)")
+            return false
+        }
+    }
+}
+
+extension Settings {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Settings()
+        language = (try? container.decodeIfPresent(InterfaceLanguage.self, forKey: .language)) ?? defaults.language
+        holdModifier = (try? container.decodeIfPresent(HoldModifier.self, forKey: .holdModifier)) ?? defaults.holdModifier
+        replaceSystemSwitcher = (try? container.decodeIfPresent(Bool.self, forKey: .replaceSystemSwitcher)) ?? defaults.replaceSystemSwitcher
+        showDelayMs = (try? container.decodeIfPresent(Int.self, forKey: .showDelayMs)) ?? defaults.showDelayMs
+        thumbnails = (try? container.decodeIfPresent(Bool.self, forKey: .thumbnails)) ?? defaults.thumbnails
+        includeMinimized = (try? container.decodeIfPresent(Bool.self, forKey: .includeMinimized)) ?? defaults.includeMinimized
+        includeOtherSpaces = (try? container.decodeIfPresent(Bool.self, forKey: .includeOtherSpaces)) ?? defaults.includeOtherSpaces
+        includeHiddenApps = (try? container.decodeIfPresent(Bool.self, forKey: .includeHiddenApps)) ?? defaults.includeHiddenApps
+        maxColumns = (try? container.decodeIfPresent(Int.self, forKey: .maxColumns)) ?? defaults.maxColumns
+        tileSize = (try? container.decodeIfPresent(Double.self, forKey: .tileSize)) ?? defaults.tileSize
+        mouseHover = (try? container.decodeIfPresent(Bool.self, forKey: .mouseHover)) ?? defaults.mouseHover
+        launchAtLogin = (try? container.decodeIfPresent(Bool.self, forKey: .launchAtLogin)) ?? defaults.launchAtLogin
     }
 }
 
@@ -119,13 +164,15 @@ final class SettingsStore {
         // Pick up hand edits first, otherwise saving would overwrite them.
         reloadIfChangedOnDisk()
         body(&value)
-        value.save()
-        knownModificationDate = Settings.fileModificationDate
+        if value.save() {
+            knownModificationDate = Settings.fileModificationDate
+        }
         applyChange()
     }
 
     /// Re-reads settings.json if it was edited outside Tappi since the last read.
-    /// A file that does not parse is ignored and logged; the current values stay.
+    /// An unreadable document is logged; current values stay and save() must back
+    /// up the original before overwriting it. Invalid individual fields use defaults.
     func reloadIfChangedOnDisk() {
         guard let date = Settings.fileModificationDate, date != knownModificationDate else { return }
         knownModificationDate = date

@@ -270,9 +270,16 @@ windows detected, or "without previews".
 
 Everything lives as JSON in `~/Library/Application Support/Tappi/settings.json` and can be
 edited directly. *Open settings file* opens it in your default text editor, never in Xcode.
-Changes take effect the next time you open the menu, no restart needed. A file that does
-not parse is ignored and the current settings stay. `tileSize` and `maxColumns` accept any
-value, not just the presets.
+Changes take effect the next time you open the menu, no restart needed. Missing, null or
+invalid values use the default for that field only; other settings are preserved and
+unknown keys are ignored. An unknown language follows the system language. Loading does
+not rewrite the file: settings are saved on the next menu change.
+
+An unreadable file or invalid JSON document is logged via `NSLog`. Tappi uses defaults at
+startup or keeps the current settings during a reload. Before the next save, the original
+contents are backed up to `settings.json.bak` in the same folder (replacing any previous
+backup). If the backup fails, the original file is not overwritten. `tileSize` and
+`maxColumns` accept any numeric value, not just the presets.
 
 The **show delay** defaults to 0 ms (Windows parity). Set it to 60–120 ms if you would
 rather not see the panel at all during fast back-and-forth toggling — it then only appears
