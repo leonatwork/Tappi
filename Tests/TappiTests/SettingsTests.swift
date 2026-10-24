@@ -15,7 +15,9 @@ final class SettingsTests: XCTestCase {
         "maxColumns": 5,
         "tileSize": 240,
         "mouseHover": false,
-        "launchAtLogin": true
+        "launchAtLogin": true,
+        "excludedApps": ["com.example.Hidden"],
+        "passthroughApps": ["com.example.Remote"]
     }
     """
 
@@ -33,6 +35,8 @@ final class SettingsTests: XCTestCase {
         settings.tileSize = 240
         settings.mouseHover = false
         settings.launchAtLogin = true
+        settings.excludedApps = ["com.example.Hidden"]
+        settings.passthroughApps = ["com.example.Remote"]
         return settings
     }
 
@@ -51,7 +55,9 @@ final class SettingsTests: XCTestCase {
             ("maxColumns", { $0.maxColumns = defaults.maxColumns }),
             ("tileSize", { $0.tileSize = defaults.tileSize }),
             ("mouseHover", { $0.mouseHover = defaults.mouseHover }),
-            ("launchAtLogin", { $0.launchAtLogin = defaults.launchAtLogin })
+            ("launchAtLogin", { $0.launchAtLogin = defaults.launchAtLogin }),
+            ("excludedApps", { $0.excludedApps = defaults.excludedApps }),
+            ("passthroughApps", { $0.passthroughApps = defaults.passthroughApps })
         ]
     }
 
@@ -132,6 +138,39 @@ final class SettingsTests: XCTestCase {
     func testInvalidDocumentStillThrows() {
         for json in ["{", "[]", "null", "42", "\"settings\""] {
             XCTAssertThrowsError(try JSONDecoder().decode(Settings.self, from: Data(json.utf8)), json)
+        }
+    }
+
+    func testLegacyFilePreservesSettingsAndSuppliesAppListDefaults() throws {
+        var object = try completeObject()
+        object.removeValue(forKey: "excludedApps")
+        object.removeValue(forKey: "passthroughApps")
+        var expected = completeSettings
+        expected.excludedApps = []
+        expected.passthroughApps = [
+            "com.microsoft.rdc.macos", "com.parallels.desktop.console",
+            "com.vmware.fusion", "com.utmapp.UTM", "com.citrix.receiver.icaviewer.mac"
+        ]
+        XCTAssertEqual(try decode(object), expected)
+    }
+
+    func testEmptyAppListsOverrideDefaults() throws {
+        var object = try completeObject()
+        object["excludedApps"] = [String]()
+        object["passthroughApps"] = [String]()
+        var expected = completeSettings
+        expected.excludedApps = []
+        expected.passthroughApps = []
+        XCTAssertEqual(try decode(object), expected)
+    }
+
+    func testInvalidArrayElementDefaultsOnlyItsList() throws {
+        for field in fields where field.key == "excludedApps" || field.key == "passthroughApps" {
+            var object = try completeObject()
+            object[field.key] = ["com.example.Valid", 42] as [Any]
+            var expected = completeSettings
+            field.reset(&expected)
+            XCTAssertEqual(try decode(object), expected)
         }
     }
 }

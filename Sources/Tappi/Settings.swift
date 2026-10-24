@@ -68,6 +68,16 @@ struct Settings: Codable, Equatable {
     var mouseHover: Bool = true
     /// Start Tappi when the user logs in.
     var launchAtLogin: Bool = false
+    /// Hide these apps only in session lists, preserving their stored MRU ranks.
+    var excludedApps: [String] = []
+    /// Let VM/remote apps receive the shortcuts instead of starting Tappi.
+    var passthroughApps: [String] = [
+        "com.microsoft.rdc.macos",
+        "com.parallels.desktop.console",
+        "com.vmware.fusion",
+        "com.utmapp.UTM",
+        "com.citrix.receiver.icaviewer.mac"
+    ]
 
     /// `~/Library/Application Support/Tappi`
     static let directory: URL = {
@@ -143,6 +153,8 @@ extension Settings {
         tileSize = (try? container.decodeIfPresent(Double.self, forKey: .tileSize)) ?? defaults.tileSize
         mouseHover = (try? container.decodeIfPresent(Bool.self, forKey: .mouseHover)) ?? defaults.mouseHover
         launchAtLogin = (try? container.decodeIfPresent(Bool.self, forKey: .launchAtLogin)) ?? defaults.launchAtLogin
+        excludedApps = (try? container.decodeIfPresent([String].self, forKey: .excludedApps)) ?? defaults.excludedApps
+        passthroughApps = (try? container.decodeIfPresent([String].self, forKey: .passthroughApps)) ?? defaults.passthroughApps
     }
 }
 
@@ -150,13 +162,18 @@ extension Settings {
 final class SettingsStore {
     static let shared = SettingsStore()
     private(set) var value: Settings
+    private(set) var excludedBundleIDs: Set<String>
+    private(set) var passthroughBundleIDs: Set<String>
     static let changed = Notification.Name("TappiSettingsChanged")
 
     /// Modification date of the file as last read or written by Tappi.
     private var knownModificationDate: Date?
 
     private init() {
-        value = Settings.load()
+        let settings = Settings.load()
+        value = settings
+        excludedBundleIDs = AppRules.normalized(settings.excludedApps)
+        passthroughBundleIDs = AppRules.normalized(settings.passthroughApps)
         knownModificationDate = Settings.fileModificationDate
     }
 
@@ -185,6 +202,8 @@ final class SettingsStore {
     }
 
     private func applyChange() {
+        excludedBundleIDs = AppRules.normalized(value.excludedApps)
+        passthroughBundleIDs = AppRules.normalized(value.passthroughApps)
         SystemSwitcher.apply()
         NotificationCenter.default.post(name: SettingsStore.changed, object: nil)
     }

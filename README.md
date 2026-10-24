@@ -281,6 +281,40 @@ contents are backed up to `settings.json.bak` in the same folder (replacing any 
 backup). If the backup fails, the original file is not overwritten. `tileSize` and
 `maxColumns` accept any numeric value, not just the presets.
 
+### App exclusion and shortcut passthrough
+
+Edit these two arrays in `settings.json`, then open Tappi's menu to reload them:
+
+```json
+{
+  "excludedApps": [],
+  "passthroughApps": [
+    "com.microsoft.rdc.macos",
+    "com.parallels.desktop.console",
+    "com.vmware.fusion",
+    "com.utmapp.UTM",
+    "com.citrix.receiver.icaviewer.mac"
+  ]
+}
+```
+
+- **`excludedApps`** (default: empty): hides all windows belonging to these bundle IDs
+  from both the all-windows and current-app switcher. Removing an ID restores its
+  windows at their stored MRU positions without restarting. This does not disable
+  Tappi's shortcuts for the app.
+- **`passthroughApps`**: while one of these apps is in front, Tappi lets Tab and the key
+  above Tab through with the configured modifier, including Shift/Control variants,
+  instead of opening a panel. With command-modifier replacement enabled, macOS' own
+  shortcuts are restored for that time and suppressed again when another app comes
+  forward. An already-running Tappi session continues normally.
+
+The defaults above cover Microsoft Remote Desktop / Windows App, Parallels Desktop,
+VMware Fusion, UTM and Citrix Viewer. Both lists compare bundle IDs case-insensitively
+and are independent: an app may be in either or both. Use `"passthroughApps": []` to
+disable the preset exemptions. A missing or invalid list uses its default without
+resetting other settings. Bundle IDs can be found, for example, with
+`mdls -name kMDItemCFBundleIdentifier /Applications/UTM.app` (adjust the app path).
+
 The **show delay** defaults to 0 ms (Windows parity). Set it to 60–120 ms if you would
 rather not see the panel at all during fast back-and-forth toggling — it then only appears
 when you actually hold the modifier.
