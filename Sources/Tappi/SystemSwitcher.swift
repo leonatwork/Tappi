@@ -71,11 +71,21 @@ enum SystemSwitcher {
         let ready = AX.isTrusted
             && SwitcherController.shared.isRunning
             && WindowStore.shared.isOperational
-        if settings.holdModifier == .command && settings.replaceSystemSwitcher && ready {
+        if shouldSuppress(settings: settings, ready: ready,
+                          frontmostBundleID: WindowStore.shared.frontmostBundleID,
+                          passthroughBundleIDs: SettingsStore.shared.passthroughBundleIDs) {
             suppress()
         } else {
             restore()
         }
+    }
+
+    /// Pure policy; tests need not change the host's system-wide shortcuts.
+    static func shouldSuppress(settings: Settings, ready: Bool, frontmostBundleID: String?,
+                               passthroughBundleIDs: Set<String>) -> Bool {
+        settings.holdModifier == .command && settings.replaceSystemSwitcher && ready
+            && !AppRules.isPassthrough(frontmostBundleID: frontmostBundleID,
+                                      passthroughBundleIDs: passthroughBundleIDs)
     }
 }
 

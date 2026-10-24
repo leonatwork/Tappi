@@ -288,6 +288,43 @@ Einstellungen erhalten. Vor dem nächsten Speichern wird der ursprüngliche Inha
 Schlägt die Sicherung fehl, wird die Originaldatei nicht überschrieben. `tileSize` und
 `maxColumns` akzeptieren beliebige numerische Werte, nicht nur die Vorgaben aus dem Menü.
 
+### Apps ausschließen und Tastenkürzel durchlassen
+
+Diese beiden Listen in `settings.json` bearbeiten und danach Tappis Menü öffnen,
+damit die Änderungen eingelesen werden:
+
+```json
+{
+  "excludedApps": [],
+  "passthroughApps": [
+    "com.microsoft.rdc.macos",
+    "com.parallels.desktop.console",
+    "com.vmware.fusion",
+    "com.utmapp.UTM",
+    "com.citrix.receiver.icaviewer.mac"
+  ]
+}
+```
+
+- **`excludedApps`** (standardmäßig leer): blendet sämtliche Fenster dieser Bundle-IDs
+  aus, sowohl in der Gesamtliste als auch beim Wechsel innerhalb der aktuellen App.
+  Nach Entfernen einer ID erscheinen die Fenster ohne Neustart wieder an ihren
+  gespeicherten MRU-Positionen. Tappis Tastenkürzel bleiben für die App aktiv.
+- **`passthroughApps`**: Solange eine dieser Apps vorne ist, lässt Tappi Tab und die
+  Taste über Tab mit dem eingestellten Modifier durch, einschließlich Varianten mit
+  Umschalt-/Control-Taste, statt ein Panel zu öffnen. Bei aktivierter Übernahme mit
+  Command-Modifier sind die macOS-Tastenkürzel für diese Zeit wieder aktiv. Sobald
+  eine andere App nach vorne kommt, werden sie erneut unterdrückt. Eine bereits
+  laufende Tappi-Sitzung wird normal fortgesetzt.
+
+Die Vorbelegung oben umfasst Microsoft Remote Desktop / Windows App, Parallels Desktop,
+VMware Fusion, UTM und Citrix Viewer. Beide Listen vergleichen Bundle-IDs unabhängig
+von Groß-/Kleinschreibung und wirken getrennt: Eine App kann in einer oder beiden
+Listen stehen. `"passthroughApps": []` schaltet die vorbelegten Ausnahmen ab. Eine
+fehlende oder ungültige Liste erhält ihren Default, ohne andere Einstellungen
+zurückzusetzen. Bundle-IDs lassen sich etwa mit
+`mdls -name kMDItemCFBundleIdentifier /Applications/UTM.app` ermitteln (App-Pfad anpassen).
+
 Die **Einblendeverzögerung** steht standardmäßig auf 0 ms (Windows-Verhalten). Wer beim
 schnellen Hin-und-Her-Wechseln gar kein Panel sehen will, stellt sie auf 60–120 ms — dann
 erscheint es nur, wenn man den Modifier tatsächlich gedrückt hält.

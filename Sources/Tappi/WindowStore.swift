@@ -13,6 +13,11 @@ final class WindowStore {
     /// Windows in most-recently-used order. Index 0 is the current window.
     private(set) var entries: [WindowEntry] = []
 
+    /// Main-run-loop cache shared by the tap and the system-shortcut policy.
+    /// The bundle ID is already lowercase, so the tap does no normalization.
+    private(set) var frontmostBundleID: String?
+    private(set) var frontmostPID: pid_t?
+
     /// Whether we are actually seeing windows.
     ///
     /// Worth having as a separate signal because a missing Accessibility grant
@@ -42,6 +47,7 @@ final class WindowStore {
         center.addObserver(self, selector: #selector(spaceChanged(_:)),
                            name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
 
+        cacheFrontmostApplication(NSWorkspace.shared.frontmostApplication)
         for app in regularApps() { attachObserver(app.processIdentifier) }
         refresh()
 
@@ -71,9 +77,16 @@ final class WindowStore {
 
     /// The list a switching session operates on, after applying the user's filters.
     func sessionList(scope: SwitchScope) -> [WindowEntry] {
-        let settings = SettingsStore.shared.value
-        let frontPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let store = SettingsStore.shared
+        return Self.sessionList(entries: entries, scope: scope, settings: store.value,
+                                frontPid: frontmostPID, excludedBundleIDs: store.excludedBundleIDs)
+    }
+
+    /// Pure filtering leaves the backing entries and their order untouched.
+    static func sessionList(entries: [WindowEntry], scope: SwitchScope, settings: Settings,
+                            frontPid: pid_t?, excludedBundleIDs: Set<String>) -> [WindowEntry] {
         return entries.filter { entry in
+            if let bundleID = entry.bundleID, excludedBundleIDs.contains(bundleID.lowercased()) { return false }
             if scope == .currentApp && entry.pid != frontPid { return false }
             if entry.isMinimized && !settings.includeMinimized { return false }
             if entry.isHidden && !settings.includeHiddenApps { return false }
@@ -98,6 +111,7 @@ final class WindowStore {
     private struct AppSnapshot {
         let pid: pid_t
         let name: String
+        let bundleID: String?
         let icon: NSImage?
         let isHidden: Bool
     }
@@ -132,7 +146,7 @@ final class WindowStore {
         // Touch AppKit only on the main thread; the slow AX round-trips happen after.
         let snapshots = regularApps().map {
             AppSnapshot(pid: $0.processIdentifier, name: $0.localizedName ?? "",
-                        icon: $0.icon, isHidden: $0.isHidden)
+                        bundleID: $0.bundleIdentifier, icon: $0.icon, isHidden: $0.isHidden)
         }
         let frontPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
         queue.async { [weak self] in
@@ -226,10 +240,11 @@ final class WindowStore {
                                    appName: fresh.app.name, icon: fresh.app.icon,
                                    isMinimized: fresh.isMinimized, isHidden: fresh.app.isHidden,
                                    isOnActiveSpace: fresh.isOnActiveSpace, frame: fresh.frame,
-                                   cgWindowID: fresh.cgWindowID)
+                                   cgWindowID: fresh.cgWindowID, bundleID: fresh.app.bundleID)
             }
             entry.title = fresh.title
             entry.appName = fresh.app.name
+            entry.bundleID = fresh.app.bundleID
             entry.icon = fresh.app.icon
             entry.isMinimized = fresh.isMinimized
             entry.isHidden = fresh.app.isHidden
@@ -276,6 +291,9 @@ final class WindowStore {
 
     @objc private func appActivated(_ note: Notification) {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+        // Release/reclaim symbolic hot keys immediately, before any AX work.
+        cacheFrontmostApplication(app)
+        SystemSwitcher.apply()
         attachObserver(app.processIdentifier)
         let pid = app.processIdentifier
         queue.async { [weak self] in
@@ -285,6 +303,11 @@ final class WindowStore {
                 if let focused { self.promote(element: focused) } else { self.refresh() }
             }
         }
+    }
+
+    private func cacheFrontmostApplication(_ app: NSRunningApplication?) {
+        frontmostPID = app?.processIdentifier
+        frontmostBundleID = AppRules.normalizedBundleID(app?.bundleIdentifier)
     }
 
     @objc private func spaceChanged(_ note: Notification) {

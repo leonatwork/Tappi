@@ -4,8 +4,8 @@ import CoreGraphics
 /// Drives one switching session, mirroring the Windows task switcher state machine.
 ///
 /// The rules being reproduced:
-///   • Index 0 is the current window, index 1 the previous one — so a quick
-///     press-and-release toggles between the last two windows.
+///   • If the current window survives filtering, index 1 is the previous one —
+///     so a quick press-and-release toggles between the last two windows.
 ///   • Shift on the first press jumps to the end of the list.
 ///   • MRU is only re-ordered on commit, never while cycling. That is what makes
 ///     repeated toggling between two windows work.
@@ -59,10 +59,12 @@ final class SwitcherController: NSObject, EventTapDelegate {
 
     func eventTap(keyDown keyCode: Int64, flags: CGEventFlags) -> Bool {
         let modifier = settings.holdModifier
+        guard AppRules.shouldHandleKeyDown(keyCode: keyCode, flags: flags,
+            modifier: modifier, sessionActive: state != .idle,
+            frontmostBundleID: WindowStore.shared.frontmostBundleID,
+            passthroughBundleIDs: SettingsStore.shared.passthroughBundleIDs) else { return false }
         guard state != .idle else {
             let isAboveTab = KeyCode.aboveTab.contains(keyCode)
-            guard flags.contains(modifier.flag), keyCode == KeyCode.tab || isAboveTab
-            else { return false }
             let sticky = modifier != .control && flags.contains(.maskControl)
             begin(scope: isAboveTab ? .currentApp : .allWindows,
                   backwards: flags.contains(.maskShift),
@@ -103,6 +105,16 @@ final class SwitcherController: NSObject, EventTapDelegate {
 
     // MARK: - Session
 
+    /// Filtering preserves MRU order, but may remove the current window. Only
+    /// skip index 0 (and require a second window) when it is still the current one.
+    static func initialSelection(in list: [WindowEntry], currentWindow: WindowEntry?,
+                                 backwards: Bool) -> Int? {
+        guard !list.isEmpty else { return nil }
+        let currentIsFirst = list[0] === currentWindow
+        guard list.count > (currentIsFirst ? 1 : 0) else { return nil }
+        return backwards ? list.count - 1 : (currentIsFirst ? 1 : 0)
+    }
+
     private func begin(scope: SwitchScope, backwards: Bool, sticky: Bool) {
         keyDownAt = CACurrentMediaTime()
         list = WindowStore.shared.sessionList(scope: scope)
@@ -111,12 +123,13 @@ final class SwitcherController: NSObject, EventTapDelegate {
                   String(describing: scope), list.count,
                   WindowStore.shared.entries.count, sticky ? "yes" : "no")
         }
-        guard list.count > 1 else {
+        guard let initialSelection = Self.initialSelection(in: list,
+            currentWindow: WindowStore.shared.entries.first, backwards: backwards) else {
             // Nothing to switch to, exactly like Windows with a single window.
             list = []
             return
         }
-        selection = backwards ? list.count - 1 : 1
+        selection = initialSelection
         state = sticky ? .sticky : .holding
 
         startWatchdog()
