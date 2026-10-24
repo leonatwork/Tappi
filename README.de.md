@@ -255,8 +255,8 @@ Danach Tappi neu starten und die Freigaben einmal erteilen.
 ## Einstellungen
 
 Über das Menüleisten-Symbol: Sprache, Modifier, Einblendeverzögerung, Kachelgröße
-(112–320 pt), Kacheln pro Zeile, Vorschaubilder, minimierte Fenster, Fenster anderer
-Spaces, Fenster ausgeblendeter Apps, Auswahl-per-Maus und Autostart. Dazu
+(112–320 pt), Kacheln pro Zeile, Panel-Bildschirm, Vorschaubilder, minimierte Fenster,
+Fenster anderer Spaces, Fenster ausgeblendeter Apps, Auswahl-per-Maus und Autostart. Dazu
 *Einstellungsdatei öffnen*, *Diagnoseprotokoll öffnen* und *Tappi neu starten*.
 
 Die Oberfläche gibt es auf Englisch, Deutsch, Französisch, Spanisch, Italienisch,
@@ -266,6 +266,21 @@ ihrem eigenen Namen: *English*, *Deutsch*, *Français*, *Español*, *Italiano*,
 *Português (Brasil)*, *Nederlands*, *日本語*, *简体中文* und *한국어*. *Systemstandard* folgt
 den bevorzugten macOS-Sprachen und verwendet Englisch als Fallback. Änderungen werden beim
 nächsten Öffnen des Menüs sichtbar und bleiben nach einem Neustart erhalten.
+
+**Panel-Bildschirm** bietet *Aktiver Bildschirm* (Standard: Bildschirm des fokussierten
+Fensters), *Unter dem Mauszeiger* und *Hauptbildschirm* (bisheriges Verhalten). Kann
+der Bildschirm des aktiven Fensters nicht ermittelt werden, nutzt Tappi den Bildschirm
+unter dem Mauszeiger, danach den Hauptbildschirm und schließlich den ersten verfügbaren
+Bildschirm. Ohne Bildschirm wird kein Panel gezeigt. Das JSON-Feld `panelScreen`
+akzeptiert `"active"`, `"mouse"` oder `"main"`; ein fehlendes Feld oder `null` bedeutet
+`"active"`, bestehende Einstellungen bleiben erhalten.
+
+Das Panel bleibt im sichtbaren Bereich des gewählten Bildschirms. Passen die Kacheln
+nicht hinein, werden sie bei gleichem Seitenverhältnis bis auf 96 pt Breite verkleinert;
+die ursprüngliche Spaltenzahl bleibt erhalten. Reicht das nicht, enthält die Sitzung
+nur die zuletzt genutzten Fenster, die hineinpassen — für Maus- und Tastaturauswahl.
+Passt nicht einmal eine Kachel in Mindestgröße, startet keine Umschaltsitzung. Bildschirm und Layout
+bleiben bis zum Sitzungsende fest; Vorschauen verwenden den Backing-Faktor dieses Bildschirms.
 
 Außerdem gibt es im Menü *Weitere Apps, die dir gefallen könnten* mit Links zu den anderen
 Tools aus dem [Paket](#teil-des-pakets).

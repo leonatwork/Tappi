@@ -1,6 +1,6 @@
 import AppKit
 
-/// Geometry for one session, computed once when the panel is presented.
+/// Geometry computed at session start and updated when windows are removed.
 ///
 /// Everything here is in AppKit's normal bottom-left coordinate space. A flipped
 /// view would make the grid maths read more naturally, but it also mirrors every
@@ -16,15 +16,44 @@ struct TileLayout {
     static let innerPadding: CGFloat = 8
     static let titleHeight: CGFloat = 18
 
-    static func compute(count: Int, on screen: NSScreen) -> TileLayout {
-        let settings = SettingsStore.shared.value
-        let width = max(96, CGFloat(settings.tileSize))
-        let height = titleHeight + innerPadding + (width * 0.60) + innerPadding * 2
+    /// Reflow only the surviving session entries; an unchanged truncated prefix
+    /// keeps its prepared geometry on the initial presentation.
+    mutating func reduceCount(to count: Int, tileWidth: Double, maxColumns: Int,
+                              visibleFrame: CGRect) {
+        guard count < tiles.count else { return }
+        self = Self.compute(count: count, tileWidth: tileWidth,
+                            maxColumns: maxColumns, visibleFrame: visibleFrame)
+    }
 
-        let available = screen.visibleFrame.width * 0.92 - outerPadding * 2
-        let fitting = max(1, Int((available + gap) / (width + gap)))
-        let columns = max(1, min(min(settings.maxColumns, fitting), count))
-        let rows = Int(ceil(Double(count) / Double(columns)))
+    static func compute(count: Int, tileWidth: Double, maxColumns: Int,
+                        visibleFrame: CGRect) -> TileLayout {
+        guard count > 0, tileWidth.isFinite,
+              visibleFrame.width.isFinite, visibleFrame.height.isFinite else { return TileLayout() }
+        let originalWidth = max(96, CGFloat(tileWidth))
+        let originalHeight = titleHeight + innerPadding + originalWidth * 0.60 + innerPadding * 2
+        let aspectRatio = originalHeight / originalWidth
+        // Preserve the usual 92% width budget, but on a very narrow screen use
+        // the remaining margin if that is enough to fit one minimum-size tile.
+        let availableWidth = min(visibleFrame.width - outerPadding * 2,
+                                 max(96, visibleFrame.width * 0.92 - outerPadding * 2))
+        let availableHeight = visibleFrame.height - outerPadding * 2
+        guard availableWidth >= 96, availableHeight >= 96 * aspectRatio else { return TileLayout() }
+
+        // Keep today's column count, even while shrinking. More columns would
+        // change the user's layout rather than just make it fit the screen.
+        let fitting = max(1, Int((availableWidth + gap) / (originalWidth + gap)))
+        let columns = max(1, min(min(maxColumns, fitting), count))
+        let requestedRows = (count - 1) / columns + 1
+        let widthLimit = (availableWidth - CGFloat(columns - 1) * gap) / CGFloat(columns)
+        let heightLimit = (availableHeight - CGFloat(requestedRows - 1) * gap) / CGFloat(requestedRows)
+        let fittingWidth = max(96, min(originalWidth, min(widthLimit, heightLimit / aspectRatio)))
+        // Round shrunk sizes down, so floating-point error at the height limit
+        // cannot drop an otherwise fitting last row or put it outside the screen.
+        let width = fittingWidth == originalWidth ? originalWidth : floor(fittingWidth * 1024) / 1024
+        let height = width == originalWidth ? originalHeight : width * aspectRatio
+        let fittingRows = max(1, Int((availableHeight + gap) / (height + gap)))
+        let rows = min(requestedRows, fittingRows)
+        let displayedCount = rows == requestedRows ? count : rows * columns
 
         var layout = TileLayout()
         layout.columns = columns
@@ -34,7 +63,7 @@ struct TileLayout {
             width: outerPadding * 2 + CGFloat(columns) * width + CGFloat(columns - 1) * gap,
             height: panelHeight)
 
-        layout.tiles = (0..<count).map { index in
+        layout.tiles = (0..<displayedCount).map { index in
             let column = index % columns
             let row = index / columns
             // Row 0 sits at the top, so count rows down from the panel's top edge.

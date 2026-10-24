@@ -18,6 +18,10 @@ final class SwitcherPanel {
     private let content: SwitcherContentView
     private var layout = TileLayout()
     private var entries: [WindowEntry] = []
+    private var visibleFrame: CGRect = .zero
+    private var backingScale: CGFloat = 1
+    private var tileWidth: Double = 0
+    private var maxColumns: Int = 0
 
     init() {
         window = NSPanel(contentRect: CGRect(x: 0, y: 0, width: 10, height: 10),
@@ -78,14 +82,41 @@ final class SwitcherPanel {
 
     // MARK: - Presenting
 
+    /// Fix the screen, layout settings and initial capacity once per session,
+    /// including delayed sessions. The controller discards entries without tiles.
+    func prepare(count: Int, activeWindowFrame: CGRect?) -> Int {
+        let screens = NSScreen.screens
+        let mainIndex = NSScreen.main.flatMap { main in screens.firstIndex { $0 === main } }
+        let settings = SettingsStore.shared.value
+        guard let index = PanelScreenSelection.choose(
+            mode: settings.panelScreen ?? .active, frames: screens.map { $0.frame },
+            primaryTop: screens.first?.frame.maxY ?? 0, windowFrame: activeWindowFrame,
+            mousePosition: NSEvent.mouseLocation, mainIndex: mainIndex)
+        else {
+            layout = TileLayout()
+            return 0
+        }
+        let screen = screens[index]
+        visibleFrame = screen.visibleFrame
+        backingScale = screen.backingScaleFactor
+        tileWidth = settings.tileSize
+        maxColumns = settings.maxColumns
+        layout = TileLayout.compute(count: count, tileWidth: tileWidth,
+                                    maxColumns: maxColumns, visibleFrame: visibleFrame)
+        return layout.tiles.count
+    }
+
     func present(entries: [WindowEntry], selected: Int) {
-        let screen = NSScreen.main ?? NSScreen.screens.first ?? NSScreen.screens[0]
+        guard !entries.isEmpty, entries.count <= layout.tiles.count else { return }
         self.entries = entries
-        layout = TileLayout.compute(count: entries.count, on: screen)
+        // Closing or quitting reflows the surviving entries on the same screen
+        // with the session's settings, without bringing back truncated windows.
+        layout.reduceCount(to: entries.count, tileWidth: tileWidth,
+                           maxColumns: maxColumns, visibleFrame: visibleFrame)
 
         let frame = CGRect(
-            x: screen.visibleFrame.midX - layout.panelSize.width / 2,
-            y: screen.visibleFrame.midY - layout.panelSize.height / 2,
+            x: visibleFrame.midX - layout.panelSize.width / 2,
+            y: visibleFrame.midY - layout.panelSize.height / 2,
             width: layout.panelSize.width, height: layout.panelSize.height)
         window.setFrame(frame, display: false)
 
@@ -117,7 +148,7 @@ final class SwitcherPanel {
             if let cached = ThumbnailProvider.shared.cached(for: entry) {
                 if entry.thumbnail !== cached { entry.thumbnail = cached }
             }
-            ThumbnailProvider.shared.request(for: entry, size: previewSize)
+            ThumbnailProvider.shared.request(for: entry, size: previewSize, scale: backingScale)
         }
         content.needsDisplay = true
     }

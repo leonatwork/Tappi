@@ -48,6 +48,12 @@
 /* Submenu title: maximum number of tiles per row. */
 "menu.tilesPerRow" = "1行あたりのタイル数";
 
+/* Panel screen submenu and its three choices. Active uses the focused window. */
+"menu.panelScreen" = "パネルの画面";
+"panelScreen.active" = "アクティブな画面";
+"panelScreen.mouse" = "マウスポインタのある画面";
+"panelScreen.main" = "メイン画面";
+
 /* Toggle: disable the macOS app switcher while Tappi owns ⌘Tab. */
 "menu.replaceSystemSwitcher" = "システムの⌘Tabを置き換える";
 

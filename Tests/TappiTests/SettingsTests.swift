@@ -67,6 +67,31 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(Settings.self, from: Data(completeJSON.utf8)), completeSettings)
     }
 
+    func testFileWithoutPanelScreenPreservesAllPreferencesAndDefaultsToActive() throws {
+        let restored = try JSONDecoder().decode(Settings.self, from: Data(completeJSON.utf8))
+        XCTAssertEqual(restored, completeSettings)
+        XCTAssertNil(restored.panelScreen)
+        XCTAssertEqual(restored.panelScreen ?? .active, .active)
+    }
+
+    func testEveryPanelScreenPreferenceSurvivesRoundTrip() throws {
+        for mode in PanelScreen.allCases {
+            var object = try completeObject()
+            object["panelScreen"] = mode.rawValue
+            var expected = completeSettings
+            expected.panelScreen = mode
+            let restored = try decode(object)
+            XCTAssertEqual(restored, expected)
+            XCTAssertEqual(try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(restored)), expected)
+        }
+    }
+
+    func testNullPanelScreenPreservesAllOtherPreferences() throws {
+        var object = try completeObject()
+        object["panelScreen"] = NSNull()
+        XCTAssertEqual(try decode(object), completeSettings)
+    }
+
     func testEmptyObjectUsesDefaults() throws {
         XCTAssertEqual(try JSONDecoder().decode(Settings.self, from: Data("{}".utf8)), Settings())
     }
