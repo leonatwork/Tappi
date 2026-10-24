@@ -1,6 +1,20 @@
 import AppKit
 import ScreenCaptureKit
 
+/// Capture dimensions and cache identity follow the panel's chosen screen, not
+/// NSScreen.main. A fresh 1x preview must not suppress a subsequent 2x request.
+struct ThumbnailRequest: Equatable {
+    let pixelWidth: Int
+    let pixelHeight: Int
+    let scale: CGFloat
+
+    init(size: CGSize, scale: CGFloat) {
+        pixelWidth = max(1, Int(size.width * scale))
+        pixelHeight = max(1, Int(size.height * scale))
+        self.scale = scale
+    }
+}
+
 /// Live window previews — strictly additive.
 ///
 /// This is where AltTab spends its time: it recomputes previews *while you wait*.
@@ -9,9 +23,9 @@ import ScreenCaptureKit
 final class ThumbnailProvider {
     static let shared = ThumbnailProvider()
 
-    private var cache: [CGWindowID: (image: NSImage, at: CFTimeInterval)] = [:]
+    private var cache: [CGWindowID: (image: NSImage, at: CFTimeInterval, request: ThumbnailRequest)] = [:]
     private var windowsByID: [CGWindowID: SCWindow] = [:]
-    private var inFlight: Set<CGWindowID> = []
+    private var inFlight: [CGWindowID: ThumbnailRequest] = [:]
     private var contentFetchedAt: CFTimeInterval = 0
     private var contentFetchInFlight = false
     private var pendingAfterFetch: [() -> Void] = []
@@ -119,19 +133,22 @@ final class ThumbnailProvider {
     }
 
     /// Kick off a capture if the cached preview is missing or stale.
-    func request(for entry: WindowEntry, size: CGSize) {
+    func request(for entry: WindowEntry, size: CGSize, scale: CGFloat) {
         guard isAvailable, !entry.isMinimized, let id = entry.cgWindowID else { return }
         let now = CACurrentMediaTime()
-        if let hit = cache[id], now - hit.at < ttl { return }
-        guard !inFlight.contains(id), let window = windowsByID[id] else { return }
-        inFlight.insert(id)
+        let request = ThumbnailRequest(size: size, scale: scale)
+        if let hit = cache[id], hit.request == request, now - hit.at < ttl {
+            if inFlight[id] != request { inFlight.removeValue(forKey: id) }
+            return
+        }
+        guard inFlight[id] != request, let window = windowsByID[id] else { return }
+        inFlight[id] = request
 
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             let configuration = SCStreamConfiguration()
-            configuration.width = Int(size.width * scale)
-            configuration.height = Int(size.height * scale)
+            configuration.width = request.pixelWidth
+            configuration.height = request.pixelHeight
             configuration.showsCursor = false
             configuration.scalesToFit = true
             let filter = SCContentFilter(desktopIndependentWindow: window)
@@ -139,12 +156,15 @@ final class ThumbnailProvider {
                 contentFilter: filter, configuration: configuration)
 
             await MainActor.run {
-                self.inFlight.remove(id)
+                // A slower capture for a previous screen must not replace the
+                // newer screen's preview or clear its pending request.
+                guard self.inFlight[id] == request else { return }
+                self.inFlight.removeValue(forKey: id)
                 guard let cgImage else { return }
                 let image = NSImage(cgImage: cgImage,
                                     size: NSSize(width: CGFloat(cgImage.width) / scale,
                                                  height: CGFloat(cgImage.height) / scale))
-                self.cache[id] = (image, CACurrentMediaTime())
+                self.cache[id] = (image, CACurrentMediaTime(), request)
                 entry.thumbnail = image
                 NotificationCenter.default.post(name: ThumbnailProvider.didUpdate, object: entry)
             }

@@ -279,7 +279,9 @@ let selected = 1
 // MARK: - Compositing
 
 guard let screen = NSScreen.main ?? NSScreen.screens.first else { fail("no screen to compute the layout for") }
-let layout = TileLayout.compute(count: entries.count, on: screen)
+let layout = TileLayout.compute(count: entries.count, tileWidth: SettingsStore.shared.value.tileSize,
+                                maxColumns: SettingsStore.shared.value.maxColumns,
+                                visibleFrame: screen.visibleFrame)
 
 let content = SwitcherContentView(frame: CGRect(origin: .zero, size: layout.panelSize))
 content.appearance = aqua
