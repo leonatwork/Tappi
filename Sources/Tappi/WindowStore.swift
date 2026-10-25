@@ -56,9 +56,8 @@ final class WindowStore {
 
     /// Move an entry to the front of the MRU list.
     func promote(_ entry: WindowEntry) {
-        guard let index = entries.firstIndex(where: { $0 === entry }), index != 0 else { return }
-        entries.remove(at: index)
-        entries.insert(entry, at: 0)
+        guard let index = entries.firstIndex(where: { $0 === entry }) else { return }
+        MRUOrdering.promote(at: index, in: &entries)
     }
 
     func promote(element: AXUIElement) {
@@ -71,15 +70,9 @@ final class WindowStore {
 
     /// The list a switching session operates on, after applying the user's filters.
     func sessionList(scope: SwitchScope) -> [WindowEntry] {
-        let settings = SettingsStore.shared.value
-        let frontPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        return entries.filter { entry in
-            if scope == .currentApp && entry.pid != frontPid { return false }
-            if entry.isMinimized && !settings.includeMinimized { return false }
-            if entry.isHidden && !settings.includeHiddenApps { return false }
-            if !entry.isOnActiveSpace && !entry.isMinimized && !settings.includeOtherSpaces { return false }
-            return true
-        }
+        WindowSessionList.make(entries: entries, settings: SettingsStore.shared.value,
+                               scope: scope,
+                               frontPid: NSWorkspace.shared.frontmostApplication?.processIdentifier)
     }
 
     // MARK: - Refresh

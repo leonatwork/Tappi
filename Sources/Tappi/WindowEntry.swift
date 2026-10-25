@@ -3,7 +3,7 @@ import ApplicationServices
 
 /// One switchable window. Identity is the `AXUIElement`, which stays stable for
 /// the lifetime of the window, so MRU position survives title and size changes.
-final class WindowEntry {
+final class WindowEntry: SessionWindow {
     let axWindow: AXUIElement
     let pid: pid_t
 

@@ -96,6 +96,23 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(Settings.self, from: Data("{}".utf8)), Settings())
     }
 
+    func testDecodedDefaultsKeepSwitcherPreferences() throws {
+        let settings = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(Settings()))
+        XCTAssertNil(settings.language)
+        XCTAssertNil(settings.panelScreen)
+        XCTAssertEqual(settings.holdModifier, .command)
+        XCTAssertTrue(settings.replaceSystemSwitcher)
+        XCTAssertEqual(settings.showDelayMs, 0)
+        XCTAssertTrue(settings.thumbnails)
+        XCTAssertTrue(settings.includeMinimized)
+        XCTAssertTrue(settings.includeOtherSpaces)
+        XCTAssertTrue(settings.includeHiddenApps)
+        XCTAssertEqual(settings.maxColumns, 7)
+        XCTAssertEqual(settings.tileSize, 148)
+        XCTAssertTrue(settings.mouseHover)
+        XCTAssertFalse(settings.launchAtLogin)
+    }
+
     func testEachMissingKeyDefaultsOnlyThatField() throws {
         for field in fields {
             var object = try completeObject()
