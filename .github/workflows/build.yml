@@ -15,6 +15,9 @@ jobs:
       - name: Toolchain
         run: swift --version
 
+      - name: Check localizations
+        run: swift scripts/check-localizations.swift
+
       - name: Build
         run: swift build -c release 2>&1 | tee build.log
 

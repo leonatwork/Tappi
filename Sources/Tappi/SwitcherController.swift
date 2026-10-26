@@ -22,13 +22,15 @@ enum SessionSelection {
 final class SwitcherController: NSObject, EventTapDelegate {
     static let shared = SwitcherController()
 
-    private enum State { case idle, holding, sticky }
-
     private let tap = EventTap()
     private let panel = SwitcherPanel()
-    private var state: State = .idle
+    private var session = SwitcherSession()
+    private var state: SwitcherSession.State { session.state }
     private var list: [WindowEntry] = []
-    private var selection = 0
+    private var selection: Int {
+        get { session.selection }
+        set { session.selection = newValue }
+    }
     private var showTimer: Timer?
     private var outsideClickMonitor: Any?
     private var watchdog: Timer?
@@ -104,7 +106,7 @@ final class SwitcherController: NSObject, EventTapDelegate {
         // Sticky sessions deliberately outlive the modifier.
         guard state == .holding else { return false }
         if !flags.contains(settings.holdModifier.flag) {
-            commit()
+            finishCommit(at: session.releaseModifier(count: list.count))
         }
         // Never swallow modifier events — apps track modifier state themselves.
         return false
@@ -125,13 +127,13 @@ final class SwitcherController: NSObject, EventTapDelegate {
             list = []
             return
         }
+        let candidateCount = list.count
         let capacity = panel.prepare(count: list.count, activeWindowFrame: WindowStore.shared.entries.first?.frame)
         // Keep the MRU prefix: keyboard actions operate on exactly the same
         // windows as mouse actions, including while the show delay is running.
         if capacity < list.count { list.removeLast(list.count - capacity) }
-        guard !list.isEmpty else { list = []; return }
-        selection = backwards ? list.count - 1 : min(1, list.count - 1)
-        state = sticky ? .sticky : .holding
+        guard session.begin(count: candidateCount, backwards: backwards,
+                            sticky: sticky, capacity: list.count) else { list = []; return }
 
         startWatchdog()
 
@@ -162,14 +164,19 @@ final class SwitcherController: NSObject, EventTapDelegate {
     private func step(_ delta: Int) {
         guard !list.isEmpty else { return }
         lastActivity = CACurrentMediaTime()
-        selection = (selection + delta + list.count) % list.count
+        session.step(delta, count: list.count)
         // Cycling means the user wants to see the list, so skip any remaining delay.
         if !panel.isPresented { present() } else { panel.select(selection) }
     }
 
     private func commit() {
         guard state != .idle else { return }
-        let target = list.indices.contains(selection) ? list[selection] : nil
+        finishCommit(at: session.commit(count: list.count))
+    }
+
+    private func finishCommit(at index: Int?) {
+        let selectedIndex = index ?? -1
+        let target = list.indices.contains(selectedIndex) ? list[selectedIndex] : nil
         end()
         guard let target else { return }
         // Re-rank immediately so a follow-up toggle sees the right order, without
@@ -189,9 +196,8 @@ final class SwitcherController: NSObject, EventTapDelegate {
         watchdog = nil
         removeOutsideClickMonitor()
         panel.dismiss()
-        state = .idle
+        session.cancel()
         list = []
-        selection = 0
     }
 
     // MARK: - Watchdog

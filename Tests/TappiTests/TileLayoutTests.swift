@@ -33,6 +33,27 @@ final class TileLayoutTests: XCTestCase {
         assertFits(result, in: screen)
     }
 
+    func testColumnCountIsLimitedByPreferenceSpaceAndWindowCount() {
+        let cases: [(count: Int, maxColumns: Int, frame: CGRect, expected: Int)] = [
+            (10, 2, screen, 2),
+            (10, 7, CGRect(x: 0, y: 0, width: 600, height: 877), 3),
+            (2, 7, screen, 2)
+        ]
+        for item in cases {
+            let result = layout(item.count, columns: item.maxColumns, frame: item.frame)
+            XCTAssertEqual(result.columns, item.expected)
+            XCTAssertEqual(result.tiles.count, item.count)
+            assertFits(result, in: item.frame)
+        }
+    }
+
+    func testRequestedTileWidthBelowMinimumIsClampedTo96Points() {
+        let result = layout(3, width: 40)
+        XCTAssertEqual(result.tileSize.width, 96)
+        XCTAssertEqual(result.tiles.count, 3)
+        assertFits(result, in: screen)
+    }
+
     func testOriginalWrappingIsUnchangedWhenItFits() {
         let result = layout(10)
         XCTAssertEqual(result.columns, 7)
