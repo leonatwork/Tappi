@@ -161,10 +161,15 @@ Im Leerlauf: rund 1 % CPU-Zeit und ~60 MB RSS.
 Neuestes Release: **[Tappi.app herunterladen](https://github.com/leonatwork/Tappi/releases/latest)**
 
 1. ZIP entpacken und `Tappi.app` nach `/Applications` ziehen
-2. Beim ersten Start **Rechtsklick ▸ Öffnen** (nicht Doppelklick)
+2. Beim ersten Start `Tappi.app` einmal per Doppelklick starten und die Meldung schließen,
+   dass der Start blockiert wurde. **Systemeinstellungen ▸ Datenschutz & Sicherheit**
+   öffnen, nach unten scrollen zum Bereich „Sicherheit“ und bei Tappi auf **Dennoch öffnen**
+   klicken. Falls angefordert, mit Passwort oder Touch ID bestätigen und mit **Öffnen**
+   den Start der App bestätigen.
 
-Schritt 2 ist nötig, weil die Release-Builds nicht notarisiert sind — dafür wäre ein
-kostenpflichtiges Apple-Entwicklerkonto erforderlich. Alternativ:
+Schritt 2 erlaubt Gatekeeper, diese App zu öffnen, weil die Release-Builds nicht notarisiert
+sind — dafür wäre ein kostenpflichtiges Apple-Entwicklerkonto erforderlich. Ab macOS 15
+umgeht Rechtsklick ▸ Öffnen Gatekeeper nicht mehr. Alternativ:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Tappi.app

@@ -159,10 +159,14 @@ Idle cost: roughly 1 % CPU time and ~60 MB RSS.
 Latest release: **[Download Tappi.app](https://github.com/leonatwork/Tappi/releases/latest)**
 
 1. Unzip and drag `Tappi.app` into `/Applications`
-2. On first launch use **right-click ▸ Open** (not a double-click)
+2. On first launch, double-click `Tappi.app` once and dismiss the blocked-launch alert.
+   Open **System Settings ▸ Privacy & Security**, scroll down to the Security section,
+   and click **Open Anyway** for Tappi. Authenticate with your password or Touch ID if
+   prompted, and confirm with **Open** to launch the app.
 
-Step 2 is needed because release builds are not notarised — that would require a paid
-Apple developer account. Alternatively:
+Step 2 allows Gatekeeper to open this app because release builds are not notarised —
+that would require a paid Apple developer account. On macOS 15 and later, right-click
+▸ Open no longer bypasses Gatekeeper. Alternatively:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Tappi.app
