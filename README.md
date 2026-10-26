@@ -299,6 +299,43 @@ contents are backed up to `settings.json.bak` in the same folder (replacing any 
 backup). If the backup fails, the original file is not overwritten. `tileSize` and
 `maxColumns` accept any numeric value, not just the presets.
 
+### App exclusions (JSON only)
+
+Add these fields to the existing JSON object, preserving your other preferences:
+
+```json
+"excludedApps": [],
+"passthroughApps": [
+  "com.microsoft.rdc.macos",
+  "com.parallels.desktop.console",
+  "com.vmware.fusion",
+  "com.utmapp.UTM",
+  "com.citrix.receiver.icaviewer.mac"
+]
+```
+
+- `excludedApps` (list A, empty by default) hides all windows of the listed bundle
+  IDs in both the all-window and current-app switchers. It does not remove windows
+  from the MRU store. Remove an ID and reopen the menu to reload: the next session
+  includes those windows again at their retained MRU positions, without restarting.
+- `passthroughApps` (list B) defaults to the five IDs above: Microsoft Remote
+  Desktop / Windows App, Parallels Desktop, VMware Fusion, UTM and Citrix Viewer.
+  While a listed app is frontmost, Tappi does not start a session or swallow either
+  switching shortcut (including Shift and sticky variants). macOS/app handling of
+  ⌘Tab and ⌘ plus the key above Tab is enabled again; Tappi suppresses the system
+  shortcuts again when an ordinary app comes forward, if command-modifier
+  replacement is configured and Tappi is ready. With option/control as modifier,
+  list B still bypasses Tappi, but system ⌘Tab is not suppressed anyway.
+
+Both lists compare bundle IDs case-insensitively and are independent: list B does
+not hide windows, and list A does not bypass shortcuts. Apps without a bundle ID
+do not match either list. A missing, null or invalid list uses only that list's
+default; `"passthroughApps": []` explicitly disables its preset. Edits apply when
+you next open the menu. Adding an exclusion also removes matching tiles from an
+open session; removing it takes effect in the next session. A foreground change
+to a list-B app does not cancel a session already in progress. Actual shortcut
+routing inside a remote session depends on that app's keyboard configuration.
+
 The **show delay** defaults to 0 ms (Windows parity). Set it to 60–120 ms if you would
 rather not see the panel at all during fast back-and-forth toggling — it then only appears
 when you actually hold the modifier.

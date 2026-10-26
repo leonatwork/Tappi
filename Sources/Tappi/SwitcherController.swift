@@ -4,6 +4,13 @@ import CoreGraphics
 /// Preserve the selected window's identity when earlier tiles disappear. If the
 /// selected window was removed, use its successor or the last remaining tile.
 enum SessionSelection {
+    static func includesCurrentWindow(_ current: AnyObject?, firstCandidate: AnyObject?) -> Bool {
+        guard let current else { return false }
+        // Commit promotes the target before the activation notification updates
+        // the foreground cache. Use MRU identity so fast toggles still select index 1.
+        return firstCandidate === current
+    }
+
     static func afterRemoving(_ indices: [Int], selected: Int, remainingCount: Int) -> Int? {
         guard remainingCount > 0 else { return nil }
         return min(max(0, selected - indices.filter { $0 < selected }.count), remainingCount - 1)
@@ -54,6 +61,8 @@ final class SwitcherController: NSObject, EventTapDelegate {
         panel.onClose = { [weak self] index in
             self?.closeWindow(at: index)
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(settingsChanged),
+                                               name: SettingsStore.changed, object: nil)
     }
 
     @discardableResult
@@ -70,10 +79,11 @@ final class SwitcherController: NSObject, EventTapDelegate {
 
     func eventTap(keyDown keyCode: Int64, flags: CGEventFlags) -> Bool {
         let modifier = settings.holdModifier
+        guard SettingsStore.shared.appExclusionPolicy.shouldHandleKeyDown(
+            keyCode, flags: flags, modifier: modifier, sessionActive: state != .idle,
+            frontBundleID: WindowStore.shared.frontmostBundleID) else { return false }
         guard state != .idle else {
             let isAboveTab = KeyCode.aboveTab.contains(keyCode)
-            guard flags.contains(modifier.flag), keyCode == KeyCode.tab || isAboveTab
-            else { return false }
             let sticky = modifier != .control && flags.contains(.maskControl)
             begin(scope: isAboveTab ? .currentApp : .allWindows,
                   backwards: flags.contains(.maskShift),
@@ -117,12 +127,14 @@ final class SwitcherController: NSObject, EventTapDelegate {
     private func begin(scope: SwitchScope, backwards: Bool, sticky: Bool) {
         keyDownAt = CACurrentMediaTime()
         list = WindowStore.shared.sessionList(scope: scope)
+        let currentWindowIncluded = SessionSelection.includesCurrentWindow(
+            WindowStore.shared.entries.first, firstCandidate: list.first)
         if EventTap.debug {
             NSLog("Tappi/session: begin scope=%@ candidates=%d store=%d sticky=%@",
                   String(describing: scope), list.count,
                   WindowStore.shared.entries.count, sticky ? "yes" : "no")
         }
-        guard list.count > 1 else {
+        guard list.count > (currentWindowIncluded ? 1 : 0) else {
             // Nothing to switch to, exactly like Windows with a single window.
             list = []
             return
@@ -133,7 +145,8 @@ final class SwitcherController: NSObject, EventTapDelegate {
         // windows as mouse actions, including while the show delay is running.
         if capacity < list.count { list.removeLast(list.count - capacity) }
         guard session.begin(count: candidateCount, backwards: backwards,
-                            sticky: sticky, capacity: list.count) else { list = []; return }
+                            sticky: sticky, capacity: list.count,
+                            currentWindowIncluded: currentWindowIncluded) else { list = []; return }
 
         startWatchdog()
 
@@ -187,6 +200,18 @@ final class SwitcherController: NSObject, EventTapDelegate {
 
     private func cancel() {
         end()
+    }
+
+    @objc private func settingsChanged() {
+        guard state != .idle else { return }
+        let policy = SettingsStore.shared.appExclusionPolicy
+        let removed = list.indices.filter { policy.excludes(bundleID: list[$0].bundleID) }
+        guard !removed.isEmpty else { return }
+        list.removeAll { policy.excludes(bundleID: $0.bundleID) }
+        guard let next = SessionSelection.afterRemoving(removed, selected: selection,
+                                                       remainingCount: list.count) else { end(); return }
+        selection = next
+        if panel.isPresented { panel.present(entries: list, selected: selection) }
     }
 
     private func end() {
@@ -247,7 +272,9 @@ final class SwitcherController: NSObject, EventTapDelegate {
     private func closeWindow(at index: Int) {
         guard list.indices.contains(index) else { return }
         let entry = list[index]
-        AX.close(entry.axWindow)
+        // Close is also reachable from the tap; AX must never block its callback.
+        let window = entry.axWindow
+        DispatchQueue.global(qos: .userInitiated).async { AX.close(window) }
         list.remove(at: index)
         guard list.count > 1 else { end(); return }
         selection = SessionSelection.afterRemoving([index], selected: selection, remainingCount: list.count) ?? 0

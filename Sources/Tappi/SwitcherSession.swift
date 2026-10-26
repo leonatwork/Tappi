@@ -8,11 +8,12 @@ struct SwitcherSession {
     var selection = 0
 
     @discardableResult
-    mutating func begin(count: Int, backwards: Bool, sticky: Bool, capacity: Int? = nil) -> Bool {
-        guard count > 1 else { return false }
+    mutating func begin(count: Int, backwards: Bool, sticky: Bool, capacity: Int? = nil,
+                        currentWindowIncluded: Bool = true) -> Bool {
+        guard count > (currentWindowIncluded ? 1 : 0) else { return false }
         let displayedCount = min(count, capacity ?? count)
         guard displayedCount > 0 else { return false }
-        selection = backwards ? displayedCount - 1 : min(1, displayedCount - 1)
+        selection = backwards ? displayedCount - 1 : min(currentWindowIncluded ? 1 : 0, displayedCount - 1)
         state = sticky ? .sticky : .holding
         return true
     }

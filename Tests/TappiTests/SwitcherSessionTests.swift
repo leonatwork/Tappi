@@ -86,6 +86,26 @@ final class SwitcherSessionTests: XCTestCase {
         }
     }
 
+    func testExcludedCurrentWindowDoesNotSkipFirstRemainingCandidate() {
+        var session = SwitcherSession()
+        XCTAssertTrue(session.begin(count: 3, backwards: false, sticky: false,
+                                    currentWindowIncluded: false))
+        XCTAssertEqual(session.releaseModifier(count: 3), 0)
+        XCTAssertTrue(session.begin(count: 3, backwards: true, sticky: false,
+                                    currentWindowIncluded: false))
+        XCTAssertEqual(session.releaseModifier(count: 3), 2)
+    }
+
+    func testSingleRemainingCandidateCanBeSelectedWhenCurrentWindowIsExcluded() {
+        var session = SwitcherSession()
+        XCTAssertTrue(session.begin(count: 1, backwards: false, sticky: false,
+                                    currentWindowIncluded: false))
+        XCTAssertEqual(session.releaseModifier(count: 1), 0)
+        XCTAssertFalse(session.begin(count: 0, backwards: false, sticky: false,
+                                     currentWindowIncluded: false))
+        XCTAssertEqual(session.state, .idle)
+    }
+
     func testSelectionUsesDisplayedMRUPrefixWithoutChangingSingleWindowRule() {
         var session = SwitcherSession()
         XCTAssertTrue(session.begin(count: 10, backwards: true, sticky: false, capacity: 3))
