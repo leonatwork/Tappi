@@ -1,6 +1,15 @@
 import AppKit
 import CoreGraphics
 
+/// Preserve the selected window's identity when earlier tiles disappear. If the
+/// selected window was removed, use its successor or the last remaining tile.
+enum SessionSelection {
+    static func afterRemoving(_ indices: [Int], selected: Int, remainingCount: Int) -> Int? {
+        guard remainingCount > 0 else { return nil }
+        return min(max(0, selected - indices.filter { $0 < selected }.count), remainingCount - 1)
+    }
+}
+
 /// Drives one switching session, mirroring the Windows task switcher state machine.
 ///
 /// The rules being reproduced:
@@ -116,7 +125,12 @@ final class SwitcherController: NSObject, EventTapDelegate {
             list = []
             return
         }
-        selection = backwards ? list.count - 1 : 1
+        let capacity = panel.prepare(count: list.count, activeWindowFrame: WindowStore.shared.entries.first?.frame)
+        // Keep the MRU prefix: keyboard actions operate on exactly the same
+        // windows as mouse actions, including while the show delay is running.
+        if capacity < list.count { list.removeLast(list.count - capacity) }
+        guard !list.isEmpty else { list = []; return }
+        selection = backwards ? list.count - 1 : min(1, list.count - 1)
         state = sticky ? .sticky : .holding
 
         startWatchdog()
@@ -136,6 +150,7 @@ final class SwitcherController: NSObject, EventTapDelegate {
         showTimer = nil
         guard state != .idle, !panel.isPresented else { return }
         panel.present(entries: list, selected: selection)
+        guard panel.isPresented else { cancel(); return }
         if EventTap.debug {
             let ms = (CACurrentMediaTime() - keyDownAt) * 1000
             NSLog("Tappi/session: visible after %.1f ms (%d windows, selection=%d)",
@@ -229,7 +244,7 @@ final class SwitcherController: NSObject, EventTapDelegate {
         AX.close(entry.axWindow)
         list.remove(at: index)
         guard list.count > 1 else { end(); return }
-        selection = min(selection, list.count - 1)
+        selection = SessionSelection.afterRemoving([index], selected: selection, remainingCount: list.count) ?? 0
         panel.present(entries: list, selected: selection)
         WindowStore.shared.refresh()
     }
@@ -238,9 +253,10 @@ final class SwitcherController: NSObject, EventTapDelegate {
         guard list.indices.contains(index) else { return }
         let pid = list[index].pid
         NSRunningApplication(processIdentifier: pid)?.terminate()
+        let removed = list.indices.filter { list[$0].pid == pid }
         list.removeAll { $0.pid == pid }
         guard list.count > 1 else { end(); return }
-        selection = min(selection, list.count - 1)
+        selection = SessionSelection.afterRemoving(removed, selected: selection, remainingCount: list.count) ?? 0
         panel.present(entries: list, selected: selection)
         WindowStore.shared.refresh()
     }

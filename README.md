@@ -255,8 +255,8 @@ Then restart Tappi and grant the permissions once.
 ## Settings
 
 From the menu bar icon: language, modifier, show delay, tile size (112–320 pt), tiles per
-row, previews, minimized windows, windows on other Spaces, windows of hidden apps, mouse
-selection and launch at login. Plus *Open settings file*, *Open diagnostics log* and
+row, panel screen, previews, minimized windows, windows on other Spaces, windows of
+hidden apps, mouse selection and launch at login. Plus *Open settings file*, *Open diagnostics log* and
 *Restart Tappi*.
 
 The interface is available in English, German, French, Spanish, Italian, Portuguese
@@ -265,6 +265,20 @@ The interface is available in English, German, French, Spanish, Italian, Portugu
 *Français*, *Español*, *Italiano*, *Português (Brasil)*, *Nederlands*, *日本語*, *简体中文*
 and *한국어*. *System default* follows your macOS preferred languages and falls back to
 English. Changes apply when you next open the menu and are saved across restarts.
+
+**Panel screen** offers *Active screen* (default: the focused window's screen),
+*Under the mouse pointer* and *Main screen* (the previous behavior). If the active
+window's screen cannot be determined, Tappi uses the mouse pointer's screen, then
+the main screen, then the first available screen. With no screen, no panel is shown.
+The JSON field `panelScreen` accepts `"active"`, `"mouse"` or `"main"`; a missing
+field or `null` means `"active"` and preserves existing preferences.
+
+The panel stays inside the selected screen's visible area. When tiles do not fit,
+they shrink with the same aspect ratio down to 96 pt wide, keeping the original
+column count. If that is still too large, only the most recently used windows that
+fit are included in that session, for both mouse and keyboard selection. If not
+even one minimum-size tile fits, no switching session starts. Screen and layout stay fixed until
+the session ends; previews use that screen's backing scale.
 
 The menu also has *More apps you might like*, linking to the other tools of the
 [package](#part-of-the-package).

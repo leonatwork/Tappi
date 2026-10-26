@@ -42,6 +42,8 @@ enum SwitchScope: String, Codable {
 struct Settings: Codable, Equatable {
     /// Missing in older settings files; nil follows the system language.
     var language: InterfaceLanguage? = nil
+    /// Missing in older settings files; nil selects the active window's screen.
+    var panelScreen: PanelScreen? = nil
     /// Modifier held down during a session. ⌘ is the default because it sits
     /// where Alt sits on a PC keyboard — directly left of the space bar — which is
     /// what Windows muscle memory reaches for.
@@ -132,6 +134,7 @@ extension Settings {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = Settings()
         language = (try? container.decodeIfPresent(InterfaceLanguage.self, forKey: .language)) ?? defaults.language
+        panelScreen = (try? container.decodeIfPresent(PanelScreen.self, forKey: .panelScreen)) ?? defaults.panelScreen
         holdModifier = (try? container.decodeIfPresent(HoldModifier.self, forKey: .holdModifier)) ?? defaults.holdModifier
         replaceSystemSwitcher = (try? container.decodeIfPresent(Bool.self, forKey: .replaceSystemSwitcher)) ?? defaults.replaceSystemSwitcher
         showDelayMs = (try? container.decodeIfPresent(Int.self, forKey: .showDelayMs)) ?? defaults.showDelayMs

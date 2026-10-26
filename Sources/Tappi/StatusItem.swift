@@ -145,6 +145,21 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
         menu.addItem(submenu(tr("menu.tilesPerRow"), columnsMenu))
 
+        let screenMenu = NSMenu()
+        for candidate in PanelScreen.allCases {
+            let title: String
+            switch candidate {
+            case .active: title = tr("panelScreen.active")
+            case .mouse: title = tr("panelScreen.mouse")
+            case .main: title = tr("panelScreen.main")
+            }
+            let entry = action(title, #selector(setPanelScreen(_:)))
+            entry.representedObject = candidate.rawValue
+            entry.state = (settings.panelScreen ?? .active) == candidate ? .on : .off
+            screenMenu.addItem(entry)
+        }
+        menu.addItem(submenu(tr("menu.panelScreen"), screenMenu))
+
         menu.addItem(.separator())
         let replace = toggle(tr("menu.replaceSystemSwitcher"), #selector(toggleReplaceSystemSwitcher),
                              settings.replaceSystemSwitcher)
@@ -266,6 +281,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func setMaxColumns(_ sender: NSMenuItem) {
         guard let value = sender.representedObject as? Int else { return }
         SettingsStore.shared.mutate { $0.maxColumns = value }
+    }
+
+    @objc private func setPanelScreen(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let screen = PanelScreen(rawValue: raw) else { return }
+        SettingsStore.shared.mutate { $0.panelScreen = screen }
     }
 
     @objc private func toggleThumbnails() {
