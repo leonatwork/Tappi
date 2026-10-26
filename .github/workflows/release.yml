@@ -88,9 +88,13 @@ jobs:
 
           1. Download and unzip `Tappi-__VERSION__.zip`
           2. Drag `Tappi.app` into `/Applications`
-          3. On first launch: **right-click ▸ Open** (not a double-click)
+          3. On first launch, double-click `Tappi.app` once and dismiss the blocked-launch alert.
+             Open **System Settings ▸ Privacy & Security**, scroll down to the Security section,
+             and click **Open Anyway** for Tappi. Authenticate with your password or Touch ID if
+             prompted, and confirm with **Open** to launch the app.
 
-          Step 3 is needed because this build is not notarised. Alternatively:
+          Step 3 allows Gatekeeper to open this app because this build is not notarised.
+          On macOS 15 and later, right-click ▸ Open no longer bypasses Gatekeeper. Alternatively:
 
           ```bash
           xattr -dr com.apple.quarantine /Applications/Tappi.app
