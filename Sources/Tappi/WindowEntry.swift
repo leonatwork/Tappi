@@ -6,6 +6,7 @@ import ApplicationServices
 final class WindowEntry: SessionWindow {
     let axWindow: AXUIElement
     let pid: pid_t
+    var bundleID: String?
 
     var title: String
     var appName: String
@@ -24,9 +25,10 @@ final class WindowEntry: SessionWindow {
 
     init(axWindow: AXUIElement, pid: pid_t, title: String, appName: String,
          icon: NSImage?, isMinimized: Bool, isHidden: Bool, isOnActiveSpace: Bool,
-         frame: CGRect?, cgWindowID: CGWindowID?) {
+         frame: CGRect?, cgWindowID: CGWindowID?, bundleID: String? = nil) {
         self.axWindow = axWindow
         self.pid = pid
+        self.bundleID = bundleID
         self.title = title
         self.appName = appName
         self.icon = icon

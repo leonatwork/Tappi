@@ -12,6 +12,9 @@ final class WindowStore {
 
     /// Windows in most-recently-used order. Index 0 is the current window.
     private(set) var entries: [WindowEntry] = []
+    /// Updated on activation, before any background AX work. Read on the main loop.
+    private(set) var frontmostBundleID: String?
+    private(set) var frontmostPID: pid_t?
 
     /// Whether we are actually seeing windows.
     ///
@@ -41,6 +44,8 @@ final class WindowStore {
                            name: NSWorkspace.didActivateApplicationNotification, object: nil)
         center.addObserver(self, selector: #selector(spaceChanged(_:)),
                            name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
+
+        cacheForeground(NSWorkspace.shared.frontmostApplication)
 
         for app in regularApps() { attachObserver(app.processIdentifier) }
         refresh()
@@ -72,7 +77,8 @@ final class WindowStore {
     func sessionList(scope: SwitchScope) -> [WindowEntry] {
         WindowSessionList.make(entries: entries, settings: SettingsStore.shared.value,
                                scope: scope,
-                               frontPid: NSWorkspace.shared.frontmostApplication?.processIdentifier)
+                               frontPid: frontmostPID,
+                               policy: SettingsStore.shared.appExclusionPolicy)
     }
 
     // MARK: - Refresh
@@ -90,6 +96,7 @@ final class WindowStore {
 
     private struct AppSnapshot {
         let pid: pid_t
+        let bundleID: String?
         let name: String
         let icon: NSImage?
         let isHidden: Bool
@@ -124,8 +131,8 @@ final class WindowStore {
     private func performRefresh() {
         // Touch AppKit only on the main thread; the slow AX round-trips happen after.
         let snapshots = regularApps().map {
-            AppSnapshot(pid: $0.processIdentifier, name: $0.localizedName ?? "",
-                        icon: $0.icon, isHidden: $0.isHidden)
+            AppSnapshot(pid: $0.processIdentifier, bundleID: $0.bundleIdentifier,
+                        name: $0.localizedName ?? "", icon: $0.icon, isHidden: $0.isHidden)
         }
         let frontPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
         queue.async { [weak self] in
@@ -219,10 +226,11 @@ final class WindowStore {
                                    appName: fresh.app.name, icon: fresh.app.icon,
                                    isMinimized: fresh.isMinimized, isHidden: fresh.app.isHidden,
                                    isOnActiveSpace: fresh.isOnActiveSpace, frame: fresh.frame,
-                                   cgWindowID: fresh.cgWindowID)
+                                   cgWindowID: fresh.cgWindowID, bundleID: fresh.app.bundleID)
             }
             entry.title = fresh.title
             entry.appName = fresh.app.name
+            entry.bundleID = fresh.app.bundleID
             entry.icon = fresh.app.icon
             entry.isMinimized = fresh.isMinimized
             entry.isHidden = fresh.app.isHidden
@@ -269,6 +277,8 @@ final class WindowStore {
 
     @objc private func appActivated(_ note: Notification) {
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+        cacheForeground(app)
+        SystemSwitcher.apply()
         attachObserver(app.processIdentifier)
         let pid = app.processIdentifier
         queue.async { [weak self] in
@@ -278,6 +288,11 @@ final class WindowStore {
                 if let focused { self.promote(element: focused) } else { self.refresh() }
             }
         }
+    }
+
+    private func cacheForeground(_ app: NSRunningApplication?) {
+        frontmostPID = app?.processIdentifier
+        frontmostBundleID = AppExclusionPolicy.normalize(app?.bundleIdentifier)
     }
 
     @objc private func spaceChanged(_ note: Notification) {

@@ -308,6 +308,47 @@ Einstellungen erhalten. Vor dem nächsten Speichern wird der ursprüngliche Inha
 Schlägt die Sicherung fehl, wird die Originaldatei nicht überschrieben. `tileSize` und
 `maxColumns` akzeptieren beliebige numerische Werte, nicht nur die Vorgaben aus dem Menü.
 
+### App-Ausschlüsse (nur JSON)
+
+Diese Felder im bestehenden JSON-Objekt ergänzen und die übrigen Einstellungen beibehalten:
+
+```json
+"excludedApps": [],
+"passthroughApps": [
+  "com.microsoft.rdc.macos",
+  "com.parallels.desktop.console",
+  "com.vmware.fusion",
+  "com.utmapp.UTM",
+  "com.citrix.receiver.icaviewer.mac"
+]
+```
+
+- `excludedApps` (Liste A, standardmäßig leer) blendet alle Fenster der aufgeführten
+  Bundle-IDs aus — sowohl in der Gesamtliste als auch beim Wechsel innerhalb der
+  aktuellen App. Die Fenster bleiben im MRU-Speicher. Eine ID entfernen und das
+  Menü zum Neuladen öffnen: Ab der nächsten Sitzung erscheinen die Fenster ohne
+  Neustart wieder an ihren beibehaltenen MRU-Positionen.
+- `passthroughApps` (Liste B) enthält standardmäßig die fünf IDs oben: Microsoft
+  Remote Desktop / Windows App, Parallels Desktop, VMware Fusion, UTM und Citrix
+  Viewer. Solange eine aufgeführte App vorne ist, startet Tappi keine Sitzung und
+  schluckt keinen der beiden Umschalt-Hotkeys (auch nicht mit Shift oder als
+  dauerhafte Sitzung). macOS bzw. die App können ⌘Tab und ⌘ plus die Taste über Tab
+  wieder verarbeiten. Sobald eine andere App vorne ist, unterdrückt Tappi die
+  System-Hotkeys erneut, sofern der ⌘-Modifier mit Systemersetzung eingestellt und
+  Tappi bereit ist. Bei ⌥/⌃ umgeht Liste B ebenfalls Tappi; System-⌘Tab ist dann
+  ohnehin nicht unterdrückt.
+
+Beide Listen vergleichen Bundle-IDs ohne Beachtung der Groß-/Kleinschreibung und
+wirken unabhängig: Liste B blendet keine Fenster aus, Liste A lässt keine Hotkeys
+durch. Apps ohne Bundle-ID passen zu keiner Liste. Eine fehlende, mit `null` belegte
+oder ungültige Liste erhält nur ihren eigenen Default; `"passthroughApps": []`
+deaktiviert die Vorbelegung ausdrücklich. Änderungen greifen beim nächsten Öffnen
+des Menüs. Neue Ausschlüsse entfernen passende Kacheln auch aus einer offenen
+Sitzung; das Entfernen eines Ausschlusses wirkt ab der nächsten Sitzung. Kommt eine
+App aus Liste B nach vorne, wird eine bereits laufende Sitzung nicht abgebrochen.
+Wie Hotkeys innerhalb einer Remote-Sitzung weitergeleitet werden, hängt von der
+Tastaturkonfiguration der jeweiligen App ab.
+
 Die **Einblendeverzögerung** steht standardmäßig auf 0 ms (Windows-Verhalten). Wer beim
 schnellen Hin-und-Her-Wechseln gar kein Panel sehen will, stellt sie auf 60–120 ms — dann
 erscheint es nur, wenn man den Modifier tatsächlich gedrückt hält.

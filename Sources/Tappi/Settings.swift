@@ -62,6 +62,16 @@ struct Settings: Codable, Equatable {
     var includeOtherSpaces: Bool = true
     /// Include windows that are hidden because their app is hidden.
     var includeHiddenApps: Bool = true
+    /// Hide these apps' windows without removing them from the MRU store.
+    var excludedApps: [String] = []
+    /// Do not start a switching session while one of these apps is frontmost.
+    var passthroughApps: [String] = [
+        "com.microsoft.rdc.macos",
+        "com.parallels.desktop.console",
+        "com.vmware.fusion",
+        "com.utmapp.UTM",
+        "com.citrix.receiver.icaviewer.mac"
+    ]
     /// Max tiles per row before wrapping into a grid.
     var maxColumns: Int = 7
     /// Tile edge length in points.
@@ -142,6 +152,8 @@ extension Settings {
         includeMinimized = (try? container.decodeIfPresent(Bool.self, forKey: .includeMinimized)) ?? defaults.includeMinimized
         includeOtherSpaces = (try? container.decodeIfPresent(Bool.self, forKey: .includeOtherSpaces)) ?? defaults.includeOtherSpaces
         includeHiddenApps = (try? container.decodeIfPresent(Bool.self, forKey: .includeHiddenApps)) ?? defaults.includeHiddenApps
+        excludedApps = (try? container.decodeIfPresent([String].self, forKey: .excludedApps)) ?? defaults.excludedApps
+        passthroughApps = (try? container.decodeIfPresent([String].self, forKey: .passthroughApps)) ?? defaults.passthroughApps
         maxColumns = (try? container.decodeIfPresent(Int.self, forKey: .maxColumns)) ?? defaults.maxColumns
         tileSize = (try? container.decodeIfPresent(Double.self, forKey: .tileSize)) ?? defaults.tileSize
         mouseHover = (try? container.decodeIfPresent(Bool.self, forKey: .mouseHover)) ?? defaults.mouseHover
@@ -153,13 +165,16 @@ extension Settings {
 final class SettingsStore {
     static let shared = SettingsStore()
     private(set) var value: Settings
+    private(set) var appExclusionPolicy: AppExclusionPolicy
     static let changed = Notification.Name("TappiSettingsChanged")
 
     /// Modification date of the file as last read or written by Tappi.
     private var knownModificationDate: Date?
 
     private init() {
-        value = Settings.load()
+        let loaded = Settings.load()
+        value = loaded
+        appExclusionPolicy = AppExclusionPolicy(settings: loaded)
         knownModificationDate = Settings.fileModificationDate
     }
 
@@ -188,6 +203,7 @@ final class SettingsStore {
     }
 
     private func applyChange() {
+        appExclusionPolicy = AppExclusionPolicy(settings: value)
         SystemSwitcher.apply()
         NotificationCenter.default.post(name: SettingsStore.changed, object: nil)
     }

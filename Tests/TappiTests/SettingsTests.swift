@@ -12,6 +12,8 @@ final class SettingsTests: XCTestCase {
         "includeMinimized": false,
         "includeOtherSpaces": false,
         "includeHiddenApps": false,
+        "excludedApps": ["com.example.Hidden"],
+        "passthroughApps": ["com.example.Remote"],
         "maxColumns": 5,
         "tileSize": 240,
         "mouseHover": false,
@@ -29,6 +31,8 @@ final class SettingsTests: XCTestCase {
         settings.includeMinimized = false
         settings.includeOtherSpaces = false
         settings.includeHiddenApps = false
+        settings.excludedApps = ["com.example.Hidden"]
+        settings.passthroughApps = ["com.example.Remote"]
         settings.maxColumns = 5
         settings.tileSize = 240
         settings.mouseHover = false
@@ -48,6 +52,8 @@ final class SettingsTests: XCTestCase {
             ("includeMinimized", { $0.includeMinimized = defaults.includeMinimized }),
             ("includeOtherSpaces", { $0.includeOtherSpaces = defaults.includeOtherSpaces }),
             ("includeHiddenApps", { $0.includeHiddenApps = defaults.includeHiddenApps }),
+            ("excludedApps", { $0.excludedApps = defaults.excludedApps }),
+            ("passthroughApps", { $0.passthroughApps = defaults.passthroughApps }),
             ("maxColumns", { $0.maxColumns = defaults.maxColumns }),
             ("tileSize", { $0.tileSize = defaults.tileSize }),
             ("mouseHover", { $0.mouseHover = defaults.mouseHover }),
@@ -94,6 +100,44 @@ final class SettingsTests: XCTestCase {
 
     func testEmptyObjectUsesDefaults() throws {
         XCTAssertEqual(try JSONDecoder().decode(Settings.self, from: Data("{}".utf8)), Settings())
+    }
+
+    func testLegacyFileDefaultsAppListsWithoutLosingOtherPreferences() throws {
+        var object = try completeObject()
+        object.removeValue(forKey: "excludedApps")
+        object.removeValue(forKey: "passthroughApps")
+        var expected = completeSettings
+        expected.excludedApps = []
+        expected.passthroughApps = Settings().passthroughApps
+        let restored = try decode(object)
+        XCTAssertEqual(restored, expected)
+        XCTAssertEqual(restored.passthroughApps, [
+            "com.microsoft.rdc.macos",
+            "com.parallels.desktop.console",
+            "com.vmware.fusion",
+            "com.utmapp.UTM",
+            "com.citrix.receiver.icaviewer.mac"
+        ])
+    }
+
+    func testExplicitEmptyAppListsDisableDefaults() throws {
+        var object = try completeObject()
+        object["excludedApps"] = [String]()
+        object["passthroughApps"] = [String]()
+        var expected = completeSettings
+        expected.excludedApps = []
+        expected.passthroughApps = []
+        XCTAssertEqual(try decode(object), expected)
+    }
+
+    func testMixedTypeAppListDefaultsOnlyThatList() throws {
+        for key in ["excludedApps", "passthroughApps"] {
+            var object = try completeObject()
+            object[key] = ["com.example.Valid", 42] as [Any]
+            var expected = completeSettings
+            fields.first { $0.key == key }?.reset(&expected)
+            XCTAssertEqual(try decode(object), expected, key)
+        }
     }
 
     func testDecodedDefaultsKeepSwitcherPreferences() throws {

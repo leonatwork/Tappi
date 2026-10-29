@@ -64,14 +64,15 @@ enum SystemSwitcher {
     /// Accessibility is missing or revoked — which macOS signals by quietly
     /// returning nothing rather than by failing — suppressing the system switcher
     /// would leave the machine with no switcher at all. So readiness is checked on
-    /// every window-list update, and the shortcut goes straight back the moment we
-    /// cannot serve it.
+    /// every window-list update and app activation. A passthrough app gets the
+    /// shortcut back immediately, without waiting for its AX queries to finish.
     static func apply() {
         let settings = SettingsStore.shared.value
         let ready = AX.isTrusted
             && SwitcherController.shared.isRunning
             && WindowStore.shared.isOperational
-        if settings.holdModifier == .command && settings.replaceSystemSwitcher && ready {
+        if SettingsStore.shared.appExclusionPolicy.shouldSuppressSystemSwitcher(
+            settings: settings, ready: ready, frontBundleID: WindowStore.shared.frontmostBundleID) {
             suppress()
         } else {
             restore()
