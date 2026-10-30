@@ -40,7 +40,7 @@ final class KeyboardLayoutCache: NSObject {
         var result: [Int64: String] = [:]
         for code in 0..<128 {
             var deadKeyState: UInt32 = 0
-            var length: UniCharCount = 0
+            var length: Int = 0
             var characters = [UniChar](repeating: 0, count: 8)
             let status = UCKeyTranslate(
                 layout, UInt16(code), UInt16(kUCKeyActionDown), 0, keyboardType,
