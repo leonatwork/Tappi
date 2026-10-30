@@ -1,5 +1,8 @@
 /* Tappi — es. Keys must exist in every language: scripts/check-localizations.swift */
 
+/* Switcher hint after the first Q press; a second press quits the selected app. */
+"switcher.quitConfirmation" = "Pulsa Q otra vez para salir";
+
 /* Menu status line: Tappi cannot run because Accessibility is not granted. */
 "status.inactive" = "Inactivo · Falta el permiso de Accesibilidad";
 

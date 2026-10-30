@@ -16,12 +16,22 @@ final class SwitcherPanel {
     private let background: NSVisualEffectView
     private let selectionView: NSView
     private let content: SwitcherContentView
+    private let quitHint: NSTextField
+    private static let hintHeight: CGFloat = 44
+    private var hintVisible = false
+    private var selectedIndex = 0
     private var layout = TileLayout()
     private var entries: [WindowEntry] = []
     private var visibleFrame: CGRect = .zero
     private var backingScale: CGFloat = 1
     private var tileWidth: Double = 0
     private var maxColumns: Int = 0
+    private var layoutVisibleFrame: CGRect {
+        // Budget for the hint before fixing session capacity. Showing it later
+        // must not push tiles offscreen or drop the selected window.
+        CGRect(x: visibleFrame.minX, y: visibleFrame.minY, width: visibleFrame.width,
+               height: max(0, visibleFrame.height - Self.hintHeight))
+    }
 
     init() {
         window = NSPanel(contentRect: CGRect(x: 0, y: 0, width: 10, height: 10),
@@ -58,9 +68,17 @@ final class SwitcherPanel {
         content = SwitcherContentView()
         content.wantsLayer = false
 
+        quitHint = NSTextField(wrappingLabelWithString: "")
+        quitHint.font = .systemFont(ofSize: 11, weight: .medium)
+        quitHint.textColor = .labelColor
+        quitHint.alignment = .center
+        quitHint.maximumNumberOfLines = 2
+        quitHint.isHidden = true
+
         window.contentView = background
         background.addSubview(selectionView)
         background.addSubview(content)
+        background.addSubview(quitHint)
 
         content.onHover = { [weak self] index in self?.onSelect?(index) }
         content.onClick = { [weak self] index in self?.onActivate?(index) }
@@ -69,6 +87,9 @@ final class SwitcherPanel {
         NotificationCenter.default.addObserver(
             self, selector: #selector(thumbnailArrived(_:)),
             name: ThumbnailProvider.didUpdate, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(updateHintText), name: SettingsStore.changed, object: nil)
+        updateHintText()
     }
 
     /// Force the window server to allocate the surface before the user ever needs
@@ -102,7 +123,7 @@ final class SwitcherPanel {
         tileWidth = settings.tileSize
         maxColumns = settings.maxColumns
         layout = TileLayout.compute(count: count, tileWidth: tileWidth,
-                                    maxColumns: maxColumns, visibleFrame: visibleFrame)
+                                    maxColumns: maxColumns, visibleFrame: layoutVisibleFrame)
         return layout.tiles.count
     }
 
@@ -112,16 +133,8 @@ final class SwitcherPanel {
         // Closing or quitting reflows the surviving entries on the same screen
         // with the session's settings, without bringing back truncated windows.
         layout.reduceCount(to: entries.count, tileWidth: tileWidth,
-                           maxColumns: maxColumns, visibleFrame: visibleFrame)
-
-        let frame = CGRect(
-            x: visibleFrame.midX - layout.panelSize.width / 2,
-            y: visibleFrame.midY - layout.panelSize.height / 2,
-            width: layout.panelSize.width, height: layout.panelSize.height)
-        window.setFrame(frame, display: false)
-
-        let bounds = CGRect(origin: .zero, size: layout.panelSize)
-        content.frame = bounds
+                           maxColumns: maxColumns, visibleFrame: layoutVisibleFrame)
+        updateFrames()
         content.entries = entries
         content.layout = layout
         content.needsDisplay = true
@@ -154,6 +167,7 @@ final class SwitcherPanel {
     }
 
     func dismiss() {
+        setQuitConfirmationVisible(false)
         guard isPresented else { return }
         window.orderOut(nil)
         isPresented = false
@@ -163,9 +177,37 @@ final class SwitcherPanel {
 
     // MARK: - Selection
 
+    @objc private func updateHintText() {
+        quitHint.stringValue = tr("switcher.quitConfirmation")
+        quitHint.toolTip = quitHint.stringValue
+    }
+
+    func setQuitConfirmationVisible(_ visible: Bool) {
+        let visible = visible && isPresented
+        guard hintVisible != visible else { return }
+        hintVisible = visible
+        quitHint.isHidden = !visible
+        updateFrames()
+        select(selectedIndex, animated: false)
+    }
+
+    private func updateFrames() {
+        let footer = hintVisible ? Self.hintHeight : 0
+        let size = CGSize(width: layout.panelSize.width, height: layout.panelSize.height + footer)
+        window.setFrame(CGRect(x: visibleFrame.midX - size.width / 2,
+                               y: visibleFrame.midY - size.height / 2,
+                               width: size.width, height: size.height), display: false)
+        content.frame = CGRect(x: 0, y: footer, width: layout.panelSize.width,
+                               height: layout.panelSize.height)
+        quitHint.frame = CGRect(x: TileLayout.outerPadding, y: 8,
+                                width: max(0, size.width - TileLayout.outerPadding * 2),
+                                height: Self.hintHeight - 16)
+    }
+
     func select(_ index: Int, animated: Bool = true) {
         guard layout.tiles.indices.contains(index) else { return }
-        let frame = layout.tiles[index]
+        selectedIndex = index
+        let frame = layout.tiles[index].offsetBy(dx: 0, dy: hintVisible ? Self.hintHeight : 0)
         selectionView.isHidden = false
         if animated {
             NSAnimationContext.runAnimationGroup { context in
