@@ -132,6 +132,16 @@ final class InterfaceLanguageTests: XCTestCase {
 
     // MARK: - Strings
 
+    func testQuitConfirmationHintExistsInAllTenLanguages() throws {
+        for language in InterfaceLanguage.localized {
+            let hint = try XCTUnwrap(strings(language)["switcher.quitConfirmation"])
+            XCTAssertFalse(hint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            XCTAssertTrue(hint.contains("Q"), "The confirmation key must be visible in every language")
+            let localizer = Localizer(language: language, resources: resources)
+            XCTAssertEqual(localizer.string("switcher.quitConfirmation"), hint)
+        }
+    }
+
     func testEveryLanguageHasEveryKey() throws {
         let english = try strings(.english)
         XCTAssertFalse(english.isEmpty)

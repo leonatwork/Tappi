@@ -90,8 +90,17 @@ Recherchiert und Regel für Regel umgesetzt:
 | Pfeiltasten | Auswahl bewegen |
 | <kbd>⏎</kbd> / <kbd>Space</kbd> | Bestätigen |
 | <kbd>Esc</kbd> | Abbrechen |
-| <kbd>W</kbd> | Ausgewähltes Fenster schließen |
-| <kbd>Q</kbd> | App des ausgewählten Fensters beenden |
+| <kbd>W</kbd> / <kbd>Backspace</kbd> (⌫) / <kbd>Entf</kbd> (Vorwärts-Entf, ⌦) | Ausgewähltes Fenster schließen |
+| <kbd>Q</kbd> zweimal | App des ausgewählten Fensters beenden; der erste Druck zeigt einen Hinweis |
+
+Im offenen Switcher folgen <kbd>W</kbd> und <kbd>Q</kbd> den Buchstaben des
+ASCII-fähigen Tastaturlayouts (auch AZERTY und Dvorak), unabhängig von Modifiern
+und Groß-/Kleinschreibung. Layoutwechsel greifen ohne Neustart. Hat das aktuelle
+Layout kein lateinisches W oder Q, gilt für diesen Buchstaben die US-/ANSI-Position.
+Zum Beenden <kbd>Q</kbd> drücken und loslassen, dann bei unveränderter Fensterauswahl
+erneut drücken. Gedrückthalten bestätigt nicht. Jede andere Taste, Auswahländerung,
+Abbruch oder das Sitzungsende verwirft die Anfrage samt Hinweis; es gibt kein
+Bestätigungs-Timeout.
 
 Gemeint ist jeweils die Taste **direkt über Tab** — auf deutschen Tastaturen <kbd>^</kbd>,
 auf US-Tastaturen <kbd>`</kbd>. Die beiden Layouts vergeben dort unterschiedliche Keycodes

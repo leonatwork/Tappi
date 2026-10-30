@@ -31,12 +31,21 @@ final class SwitcherController: NSObject, EventTapDelegate {
 
     private let tap = EventTap()
     private let panel = SwitcherPanel()
+    private let keyboardLayout = KeyboardLayoutCache()
+    private var quitConfirmation = QuitConfirmation<ObjectIdentifier>()
     private var session = SwitcherSession()
     private var state: SwitcherSession.State { session.state }
     private var list: [WindowEntry] = []
     private var selection: Int {
         get { session.selection }
-        set { session.selection = newValue }
+        set {
+            session.selection = newValue
+            quitConfirmation.handle(.selectionChanged(selectedIdentity))
+            panel.setQuitConfirmationVisible(quitConfirmation.isPending)
+        }
+    }
+    private var selectedIdentity: ObjectIdentifier? {
+        list.indices.contains(selection) ? ObjectIdentifier(list[selection]) : nil
     }
     private var showTimer: Timer?
     private var outsideClickMonitor: Any?
@@ -71,13 +80,16 @@ final class SwitcherController: NSObject, EventTapDelegate {
         return tap.install()
     }
 
-    func stop() { tap.uninstall() }
+    func stop() {
+        end()
+        tap.uninstall()
+    }
 
     var isRunning: Bool { tap.isEnabled }
 
     // MARK: - Key handling
 
-    func eventTap(keyDown keyCode: Int64, flags: CGEventFlags) -> Bool {
+    func eventTap(keyDown keyCode: Int64, flags: CGEventFlags, isRepeat: Bool) -> Bool {
         let modifier = settings.holdModifier
         guard SettingsStore.shared.appExclusionPolicy.shouldHandleKeyDown(
             keyCode, flags: flags, modifier: modifier, sessionActive: state != .idle,
@@ -91,6 +103,8 @@ final class SwitcherController: NSObject, EventTapDelegate {
             return true
         }
 
+        let action = keyboardLayout.keyMap[keyCode]
+        if action != .quitApp { clearQuitConfirmation() }
         switch keyCode {
         case let key where key == KeyCode.tab || KeyCode.aboveTab.contains(key):
             step(flags.contains(.maskShift) ? -1 : 1)
@@ -102,17 +116,29 @@ final class SwitcherController: NSObject, EventTapDelegate {
             cancel()
         case KeyCode.ret, KeyCode.space:
             commit()
-        case KeyCode.w:
-            closeWindow(at: selection)
-        case KeyCode.q:
-            quitApp(at: selection)
         default:
-            break // Swallow everything else for the duration of the session.
+            switch action {
+            case .closeWindow:
+                closeWindow(at: selection)
+            case .quitApp:
+                lastActivity = CACurrentMediaTime()
+                let decision = quitConfirmation.handle(.quit(target: selectedIdentity, isRepeat: isRepeat))
+                if decision == .quit { quitApp(at: selection) }
+                else if decision == .showHint {
+                    // A request must be acknowledged even while showDelay is running.
+                    if !panel.isPresented { present() }
+                }
+                panel.setQuitConfirmationVisible(quitConfirmation.isPending)
+            case nil:
+                break // Swallow everything else for the duration of the session.
+            }
         }
         return true
     }
 
     func eventTap(flagsChanged keyCode: Int64, flags: CGEventFlags) -> Bool {
+        // Modifier keys are other keys too, including in sticky sessions.
+        if state != .idle { clearQuitConfirmation() }
         // Sticky sessions deliberately outlive the modifier.
         guard state == .holding else { return false }
         if !flags.contains(settings.holdModifier.flag) {
@@ -148,6 +174,8 @@ final class SwitcherController: NSObject, EventTapDelegate {
                             sticky: sticky, capacity: list.count,
                             currentWindowIncluded: currentWindowIncluded) else { list = []; return }
 
+        clearQuitConfirmation()
+
         startWatchdog()
 
         let delay = Double(settings.showDelayMs) / 1000.0
@@ -165,6 +193,7 @@ final class SwitcherController: NSObject, EventTapDelegate {
         showTimer = nil
         guard state != .idle, !panel.isPresented else { return }
         panel.present(entries: list, selected: selection)
+        panel.setQuitConfirmationVisible(quitConfirmation.isPending)
         guard panel.isPresented else { cancel(); return }
         if EventTap.debug {
             let ms = (CACurrentMediaTime() - keyDownAt) * 1000
@@ -175,6 +204,7 @@ final class SwitcherController: NSObject, EventTapDelegate {
     }
 
     private func step(_ delta: Int) {
+        clearQuitConfirmation()
         guard !list.isEmpty else { return }
         lastActivity = CACurrentMediaTime()
         session.step(delta, count: list.count)
@@ -215,6 +245,8 @@ final class SwitcherController: NSObject, EventTapDelegate {
     }
 
     private func end() {
+        quitConfirmation.handle(.sessionEnded)
+        panel.setQuitConfirmationVisible(false)
         showTimer?.invalidate()
         showTimer = nil
         watchdog?.invalidate()
@@ -269,7 +301,13 @@ final class SwitcherController: NSObject, EventTapDelegate {
 
     // MARK: - Window actions
 
+    private func clearQuitConfirmation() {
+        quitConfirmation.handle(.otherKey)
+        panel.setQuitConfirmationVisible(false)
+    }
+
     private func closeWindow(at index: Int) {
+        clearQuitConfirmation()
         guard list.indices.contains(index) else { return }
         let entry = list[index]
         // Close is also reachable from the tap; AX must never block its callback.
@@ -283,6 +321,7 @@ final class SwitcherController: NSObject, EventTapDelegate {
     }
 
     private func quitApp(at index: Int) {
+        clearQuitConfirmation()
         guard list.indices.contains(index) else { return }
         let pid = list[index].pid
         NSRunningApplication(processIdentifier: pid)?.terminate()

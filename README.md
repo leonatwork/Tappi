@@ -89,8 +89,16 @@ Researched and implemented rule by rule:
 | Arrow keys | Move the selection |
 | <kbd>⏎</kbd> / <kbd>Space</kbd> | Confirm |
 | <kbd>Esc</kbd> | Cancel |
-| <kbd>W</kbd> | Close the selected window |
-| <kbd>Q</kbd> | Quit the selected window's app |
+| <kbd>W</kbd> / <kbd>Backspace</kbd> / <kbd>Delete</kbd> (forward delete) | Close the selected window |
+| <kbd>Q</kbd> twice | Quit the selected window's app; the first press shows a hint |
+
+While the switcher is open, <kbd>W</kbd> and <kbd>Q</kbd> follow the letters in the
+ASCII-capable keyboard layout (including AZERTY and Dvorak), ignoring modifiers
+and letter case. Layout changes apply without restarting. If the current layout
+has no Latin W or Q, that letter falls back to its US/ANSI position.
+To quit, press and release <kbd>Q</kbd>, then press it again with the same window
+selected. Holding Q does not confirm. Any other key, selection change, cancellation
+or session end clears the request and its hint; there is no confirmation timeout.
 
 The second shortcut means the key **directly above Tab** — <kbd>`</kbd> on US keyboards,
 <kbd>^</kbd> on German ones. The two layouts assign different keycodes there (ISO reports

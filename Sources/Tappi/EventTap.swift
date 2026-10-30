@@ -20,13 +20,16 @@ enum KeyCode {
     static let right: Int64 = 124
     static let down: Int64 = 125
     static let up: Int64 = 126
+    // ANSI fallbacks only; letter shortcuts use KeyboardLayoutCache.
     static let w: Int64 = 13
     static let q: Int64 = 12
+    static let backspace: Int64 = 51
+    static let forwardDelete: Int64 = 117
 }
 
 protocol EventTapDelegate: AnyObject {
     /// Return `true` to swallow the event so it never reaches the focused app.
-    func eventTap(keyDown keyCode: Int64, flags: CGEventFlags) -> Bool
+    func eventTap(keyDown keyCode: Int64, flags: CGEventFlags, isRepeat: Bool) -> Bool
     func eventTap(flagsChanged keyCode: Int64, flags: CGEventFlags) -> Bool
 }
 
@@ -92,7 +95,8 @@ final class EventTap {
         let swallow: Bool
         switch type {
         case .keyDown:
-            swallow = delegate.eventTap(keyDown: keyCode, flags: flags)
+            swallow = delegate.eventTap(keyDown: keyCode, flags: flags,
+                                        isRepeat: event.getIntegerValueField(.keyboardEventAutorepeat) != 0)
         case .flagsChanged:
             swallow = delegate.eventTap(flagsChanged: keyCode, flags: flags)
         default:
