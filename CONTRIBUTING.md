@@ -36,6 +36,11 @@ certificate   designated => certificate leaf = H"..."   ← stable
 No admin password is needed. Skip it and you will be re-granting permissions after every
 single build — which costs more time than reading this section.
 
+On the first build, macOS may show a one-time keychain dialog asking you to allow
+`codesign` to use the private key. If signing fails (for example, access is denied
+or `CODESIGN_IDENTITY` is invalid), `build.sh` shows the signing error and aborts
+before installation. It does not retry without Hardened Runtime.
+
 ## The one design principle
 
 **Nothing is computed on the hotkey path.**
