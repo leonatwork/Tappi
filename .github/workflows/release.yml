@@ -7,12 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
+  build:
     runs-on: macos-15
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      signed: ${{ steps.signing.outputs.signed }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
@@ -46,7 +48,7 @@ jobs:
       - name: Build
         env:
           # Tag builds use the tag; manual builds fall back to the newest tag in build.sh.
-          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          VERSION: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || '' }}
         run: ./build.sh
 
       - name: Verify signature
@@ -56,28 +58,43 @@ jobs:
           # A stable identity shows up as "certificate leaf" in the designated requirement.
           codesign -d -r- "dist/Tappi.app" 2>&1 | grep "certificate leaf"
 
-
       - name: Package
         env:
-          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'manual' }}
+          VERSION: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || 'manual' }}
         run: |
           # ditto rather than zip: it preserves the code signature and resource forks.
           ditto -c -k --keepParent dist/Tappi.app "Tappi-${VERSION}.zip"
           shasum -a 256 "Tappi-${VERSION}.zip" | tee checksum.txt
 
-      - name: Keep manual build
-        if: github.ref_type != 'tag'
-        uses: actions/upload-artifact@v4
+      - name: Upload build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: Tappi-manual
-          path: Tappi-manual.zip
+          name: Tappi-${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || 'manual' }}
+          path: |
+            Tappi-*.zip
+            checksum.txt
+          if-no-files-found: error
+
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    permissions:
+      contents: write
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Tappi-${{ github.ref_name }}
 
       - name: Publish release
-        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
+          # The publish job has no checkout from which gh could infer the repository.
+          GH_REPO: ${{ github.repository }}
           VERSION: ${{ github.ref_name }}
-          SIGNED: ${{ steps.signing.outputs.signed }}
+          SIGNED: ${{ needs.build.outputs.signed }}
         run: |
           if [ "$SIGNED" = "true" ]; then
             SIGNING_NOTE="> **Note:** this build is signed with a stable certificate. Permissions granted once
