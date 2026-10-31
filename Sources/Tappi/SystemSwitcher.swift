@@ -22,6 +22,15 @@ enum SystemSwitcher {
 
     /// The disabled state persists after we exit, so this must always be undone.
     private static var disabledByUs = false
+    private static var ownsLifecycle = false
+
+    /// Only a copy admitted by the single-instance gate may change global state.
+    static func claimOwnership() { ownsLifecycle = true }
+
+    static func relinquishOwnership() {
+        restore()
+        ownsLifecycle = false
+    }
 
     static var isSuppressed: Bool { disabledByUs }
 
@@ -31,7 +40,7 @@ enum SystemSwitcher {
     }
 
     private static func suppress() {
-        guard !disabledByUs else { return }
+        guard ownsLifecycle, !disabledByUs else { return }
         for key in HotKey.allCases {
             CGSSetSymbolicHotKeyEnabled(key.rawValue, false)
         }
@@ -39,11 +48,11 @@ enum SystemSwitcher {
         NSLog("Tappi: system ⌘Tab switcher disabled")
     }
 
-    /// Hand the shortcuts back. Safe to call repeatedly and when we never disabled
-    /// anything — a previous hard kill can leave the system without a switcher, and
-    /// calling this unconditionally at launch repairs exactly that.
+    /// Force permits explicit repair by the admitted instance, never by a rejected
+    /// second copy. Ordinary shutdown restores only suppression owned by this run.
     static func restore(force: Bool = false) {
-        guard force || disabledByUs else { return }
+        guard InstanceLifecycle.shouldRestore(ownsLifecycle: ownsLifecycle,
+                                               suppressedByUs: disabledByUs, force: force) else { return }
         for key in HotKey.allCases {
             CGSSetSymbolicHotKeyEnabled(key.rawValue, true)
         }
@@ -54,6 +63,7 @@ enum SystemSwitcher {
     /// Repairs the one state nobody should ever be left in: the system switcher
     /// disabled by a previous run that was killed before it could hand it back.
     static func repairOrphanedState() {
+        guard ownsLifecycle else { return }
         if !systemShortcutsEnabled { restore(force: true) }
     }
 
@@ -67,6 +77,7 @@ enum SystemSwitcher {
     /// every window-list update and app activation. A passthrough app gets the
     /// shortcut back immediately, without waiting for its AX queries to finish.
     static func apply() {
+        guard ownsLifecycle else { return }
         let settings = SettingsStore.shared.value
         let ready = AX.isTrusted
             && SwitcherController.shared.isRunning

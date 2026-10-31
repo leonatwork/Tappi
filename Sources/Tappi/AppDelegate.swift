@@ -5,19 +5,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var readinessTimer: Timer?
     private var signalSources: [DispatchSourceSignal] = []
     private var storeStarted = false
+    private var ownsLifecycle = false
+    private var restartTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu bar only: no Dock tile, no main menu, never steals focus.
         NSApp.setActivationPolicy(.accessory)
 
-        // Two copies (a build in dist/ and the installed one) share a bundle id and
-        // would each install an event tap, double-handling every keystroke — and
-        // the first one to quit would hand ⌘Tab back while the other still runs.
-        guard !anotherInstanceIsRunning() else {
-            NSLog("Tappi: another instance is already running — exiting")
+        let arguments = ProcessInfo.processInfo.arguments
+        let restart = RestartRequest(arguments: arguments)
+        // A malformed restart must not silently turn into an ordinary launch.
+        guard restart != nil || !arguments.contains(RestartRequest.argument) else {
             NSApp.terminate(nil)
             return
         }
+        checkStartup(restart: restart)
+    }
+
+    private func checkStartup(restart: RestartRequest?) {
+        let remaining = restart.map { $0.waitDeadline - ProcessInfo.processInfo.systemUptime }
+        switch InstanceLifecycle.startup(hasPeer: anotherInstanceIsRunning(), restartRemaining: remaining) {
+        case .exit:
+            // If acceptance won the race with this timeout, use the exit-wait
+            // interval instead of abandoning a replacement the parent relies on.
+            if let restart, restart.decide(.cancelled) == .accepted,
+               ProcessInfo.processInfo.systemUptime < restart.waitDeadline {
+                checkStartup(restart: restart)
+                return
+            }
+            restart?.remove()
+            restartTimer?.invalidate()
+            restartTimer = nil
+            NSLog("Tappi: another instance is still running — exiting without taking ownership")
+            NSApp.terminate(nil)
+        case .wait:
+            guard let restart else { return }
+            guard restart.decision != .cancelled, restart.announceReady() else {
+                restart.remove()
+                restartTimer?.invalidate()
+                restartTimer = nil
+                NSApp.terminate(nil)
+                return
+            }
+            guard restartTimer == nil else { return }
+            restartTimer = Timer.scheduledTimer(withTimeInterval: RestartRequest.pollInterval,
+                                                repeats: true) { [weak self] _ in
+                self?.checkStartup(restart: restart)
+            }
+        case .start:
+            restart?.remove()
+            restartTimer?.invalidate()
+            restartTimer = nil
+            beginStartup()
+        }
+    }
+
+    private func beginStartup() {
+        ownsLifecycle = true
+        SystemSwitcher.claimOwnership()
 
         statusItem = StatusItemController()
         installTerminationHandlers()
@@ -107,7 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let id = Bundle.main.bundleIdentifier else { return false }
         let mine = ProcessInfo.processInfo.processIdentifier
         return NSRunningApplication.runningApplications(withBundleIdentifier: id)
-            .contains { $0.processIdentifier != mine }
+            .contains { $0.processIdentifier != mine && !$0.isTerminated }
     }
 
     /// Log a recurring condition only when it changes, so the file stays readable.
@@ -118,10 +163,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // Disabling the system switcher outlives our process, so handing it back
-        // is not optional.
-        SystemSwitcher.restore(force: true)
+        cleanUp()
+    }
+
+    private func cleanUp() {
+        restartTimer?.invalidate()
+        restartTimer = nil
+        // Rejected/waiting copies must not even initialize the shared controller:
+        // its initializer creates the panel and reads settings.
+        guard ownsLifecycle else { return }
+        ownsLifecycle = false
+        readinessTimer?.invalidate()
+        readinessTimer = nil
         SwitcherController.shared.stop()
+        SystemSwitcher.relinquishOwnership()
     }
 
     /// `pkill` and friends bypass `applicationWillTerminate`, which would leave the
@@ -130,8 +185,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for signalNumber in [SIGTERM, SIGINT, SIGHUP] {
             signal(signalNumber, SIG_IGN)
             let source = DispatchSource.makeSignalSource(signal: signalNumber, queue: .main)
-            source.setEventHandler {
-                SystemSwitcher.restore(force: true)
+            source.setEventHandler { [weak self] in
+                self?.cleanUp()
                 NSApp.terminate(nil)
             }
             source.resume()

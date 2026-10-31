@@ -26,6 +26,9 @@ struct SiblingApp {
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var settings: Settings { SettingsStore.shared.value }
+    private var restartRequest: RestartRequest?
+    private var restartApplication: NSRunningApplication?
+    private var restartTimeout: Timer?
 
     override init() {
         super.init()
@@ -33,6 +36,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
+    }
+
+    deinit {
+        restartTimeout?.invalidate()
     }
 
     /// A 2×2 window grid with one tile selected — the switcher's own picture.
@@ -317,12 +324,72 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Screen Recording only takes effect for a freshly started process.
     @objc private func restartTappi() {
+        guard restartRequest == nil else { return }
+        let request = RestartRequest(token: UUID().uuidString,
+                                     parentPID: ProcessInfo.processInfo.processIdentifier,
+                                     deadline: ProcessInfo.processInfo.systemUptime + RestartRequest.timeout)
+        do {
+            try request.prepare()
+        } catch {
+            NSLog("Tappi: cannot prepare restart — keeping the current instance: %@", String(describing: error))
+            return
+        }
+        restartRequest = request
+        restartTimeout = Timer.scheduledTimer(withTimeInterval: RestartRequest.pollInterval,
+                                              repeats: true) { [weak self] _ in
+            self?.finishRestartIfReady()
+        }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.createsNewApplicationInstance = true
+        configuration.arguments = request.arguments
         let url = Bundle.main.bundleURL
-        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
-            DispatchQueue.main.async { NSApp.terminate(nil) }
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { [weak self] app, error in
+            DispatchQueue.main.async {
+                guard let self, self.restartRequest?.token == request.token else { return }
+                guard error == nil, let app, app.processIdentifier != request.parentPID else {
+                    NSLog("Tappi: restart launch failed — keeping the current instance: %@",
+                          String(describing: error))
+                    self.clearRestart()
+                    return
+                }
+                self.restartApplication = app
+                self.finishRestartIfReady()
+            }
         }
+    }
+
+    private func finishRestartIfReady() {
+        guard let request = restartRequest else { return }
+        let remaining = request.deadline - ProcessInfo.processInfo.systemUptime
+        guard remaining > 0, request.decision != .cancelled else {
+            NSLog("Tappi: restart timed out — keeping the current instance")
+            clearRestart()
+            return
+        }
+        guard InstanceLifecycle.shouldTerminateForRestart(
+            launchSucceeded: restartApplication != nil,
+            replacementReady: request.isReady,
+            replacementRunning: restartApplication.map { !$0.isTerminated } ?? false,
+            remaining: remaining) else { return }
+        guard request.decide(.accepted) == .accepted else {
+            clearRestart()
+            return
+        }
+        // The replacement has reached its wait loop, not merely been spawned.
+        // It cannot touch hot keys/settings until this process has fully exited.
+        clearRestart(accepted: true)
+        NSApp.terminate(nil)
+    }
+
+    private func clearRestart(accepted: Bool = false) {
+        if !accepted {
+            restartRequest?.decide(.cancelled)
+            restartRequest?.remove()
+        }
+        restartTimeout?.invalidate()
+        restartTimeout = nil
+        restartRequest = nil
+        restartApplication = nil
     }
 
     @objc private func toggleReplaceSystemSwitcher() {
