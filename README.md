@@ -353,6 +353,20 @@ The **show delay** defaults to 0 ms (Windows parity). Set it to 60–120 ms if y
 rather not see the panel at all during fast back-and-forth toggling — it then only appears
 when you actually hold the modifier.
 
+## Privacy
+
+Tappi makes no network requests and sends no data to a server. Menu links to other
+projects open in your default browser, which then accesses those websites.
+
+Local files live in `~/Library/Application Support/Tappi/`: `settings.json` stores
+your preferences, and `diagnostics.log` records startup state and permissions,
+not window titles or contents. The log is recreated on every launch. If an invalid
+settings file needs to be backed up before saving, `settings.json.bak` is stored
+in the same folder.
+
+Screen Recording permission is optional and used only for window previews.
+Without it, the switcher works with app icons instead.
+
 ## Diagnostics
 
 Tappi always logs its startup to:
