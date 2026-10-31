@@ -362,6 +362,21 @@ Die **Einblendeverzögerung** steht standardmäßig auf 0 ms (Windows-Verhalten)
 schnellen Hin-und-Her-Wechseln gar kein Panel sehen will, stellt sie auf 60–120 ms — dann
 erscheint es nur, wenn man den Modifier tatsächlich gedrückt hält.
 
+## Datenschutz
+
+Tappi führt selbst keine Netzwerkzugriffe durch und sendet keine Daten an einen
+Server. Menü-Links zu anderen Projekten öffnen sich im Standard-Browser, der
+anschließend die jeweiligen Websites aufruft.
+
+Lokale Dateien liegen in `~/Library/Application Support/Tappi/`: `settings.json`
+speichert deine Einstellungen, `diagnostics.log` den Startzustand und die
+Berechtigungen, keine Fenstertitel oder Fensterinhalte. Das Protokoll wird bei
+jedem Start neu angelegt. Muss eine ungültige Einstellungsdatei vor dem Speichern
+gesichert werden, liegt `settings.json.bak` im selben Ordner.
+
+Die Berechtigung zur Bildschirmaufnahme ist optional und wird nur für
+Fenstervorschauen verwendet. Ohne sie funktioniert der Umschalter mit App-Symbolen.
+
 ## Diagnose
 
 Tappi protokolliert seinen Startvorgang immer nach:
