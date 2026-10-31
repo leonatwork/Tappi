@@ -19,6 +19,7 @@ KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 if security find-identity -p codesigning | grep -q "$NAME"; then
   echo "==> identity '$NAME' already exists — nothing to do"
+  echo "    Older identities may allow key access by all apps; this setup leaves them unchanged."
   exit 0
 fi
 
@@ -34,13 +35,16 @@ openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \
   -addext "extendedKeyUsage=critical,codeSigning" 2>/dev/null
 
 # Apple's keychain cannot read OpenSSL 3's default PKCS#12 algorithms.
+PKCS12_PASSWORD="$(openssl rand -hex 32)"
+export PKCS12_PASSWORD
 openssl pkcs12 -export -out "$WORK/id.p12" \
   -inkey "$WORK/key.pem" -in "$WORK/cert.pem" \
-  -passout pass:tappi -name "$NAME" \
+  -passout env:PKCS12_PASSWORD -name "$NAME" \
   -macalg sha1 -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES 2>/dev/null
 
 echo "==> importing into the login keychain"
-security import "$WORK/id.p12" -k "$KEYCHAIN" -P tappi -T /usr/bin/codesign -A >/dev/null
+security import "$WORK/id.p12" -k "$KEYCHAIN" -P "$PKCS12_PASSWORD" -T /usr/bin/codesign >/dev/null
+unset PKCS12_PASSWORD
 
 echo "==> done. './build.sh --install' will now use it automatically."
 echo "    Grant the permissions once more; they will survive every rebuild after that."

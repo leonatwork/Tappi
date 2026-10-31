@@ -50,8 +50,10 @@ if [[ "$IDENTITY" == "-" ]]; then
   echo "!!  run ./setup-signing.sh once to avoid that."
 fi
 echo "==> codesign (identity: $IDENTITY)"
-codesign --force --sign "$IDENTITY" --options runtime --timestamp=none "$APP" 2>/dev/null \
-  || codesign --force --sign "$IDENTITY" "$APP"
+if ! codesign --force --sign "$IDENTITY" --options runtime --timestamp=none "$APP"; then
+  echo "!!  signing failed for identity '$IDENTITY'; build aborted. See codesign errors above." >&2
+  exit 1
+fi
 
 if [[ "${1:-}" == "--install" ]]; then
   echo "==> installing to /Applications"
